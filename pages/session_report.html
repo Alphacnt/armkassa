@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчет по сеансам</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+    <main>
+    <div class="container-fluid p-4">
+        <!-- Основная страница -->
+        <div id="mainPage">
+            <div class="main-container">
+                <div class="page-header">
+                    <h1><i class="bi bi-cart-check me-2"></i>Отчет по сеансам</h1>
+                </div>
+                <div class="filters-section mt-3">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label">Дата с</label>
+                            <input type="date" class="form-control" id="dateFrom">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Дата по</label>
+                            <input type="date" class="form-control" id="dateTo">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label"> </label>
+                            <button class="btn btn-primary w-100 clickable" id="newReportBtn">
+                                <i class="bi bi-plus-circle me-2"></i>Сформировать отчет
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label"> </label>
+                            <button class="btn btn-primary w-100 clickable" id="showAllAnalyticsBtn">
+                                <i class="bi bi-bar-chart me-2"></i>Общая аналитика
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label"> </label>
+                            <button class="btn btn-success w-100 clickable" id="exportExcelBtn">
+                                <i class="bi bi-file-earmark-excel me-2"></i>Экспорт в Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div class="d-flex justify-content-end mb-2">
+                        <select id="pageSizeSelect" class="form-select w-auto">
+                            <option value="5">5 записей</option>
+                            <option value="10" selected>10 записей</option>
+                            <option value="20">20 записей</option>
+                            <option value="50">50 записей</option>
+                        </select>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">№</th>
+                                    <th rowspan="2">Дата</th>
+                                    <th rowspan="2">Время сеанса</th>
+                                    <th rowspan="2">Кол-во всего билетов</th>
+                                    <th rowspan="2">Кол-во остатков билетов</th>
+                                    <th rowspan="2">Кол-во бесплатных билетов</th>
+                                    <th rowspan="2">Кол-во проданных билетов</th>
+                                    <th colspan="7" class="text-center">В том числе:</th>
+                                    <th rowspan="2">Мероприятие</th>
+                                </tr>
+                                <tr class="sub-columns">
+                                    <th>Касса (QR/карта)</th>
+                                    <th>Касса (наличные)</th>
+                                    <th>Киоск</th>
+                                    <th>Muzaidyny.kz (KaspiQR)</th>
+                                    <th>Muzaidyny.kz (Карта)</th>
+                                    <th>Kaspi платежи</th>
+                                    <th>Возвраты</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesTable"></tbody>
+                        </table>
+                    </div>
+                    <div id="paginationContainer" class="paginationControls mt-3"></div>
+                </div>
+            </div>
+            <div class="toast-container position-fixed top-0 end-0 p-3"></div>
+        </div>
+
+        <!-- Дашборд -->
+        <div id="dashboardPage" class="dashboard-container" style="display: none;">
+            <div class="dashboard-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1><i class="bi bi-graph-up me-2"></i>Аналитика по сеансам</h1>
+                        <p class="mb-0 opacity-75" id="dashboardSubtitle">Аналитика</p>
+                    </div>
+                    <button class="btn btn-light clickable" id="backToMainBtn">
+                        <i class="bi bi-arrow-left me-2"></i>Вернуться к отчету
+                    </button>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-2">
+                    <div class="stats-card">
+                        <h3 id="totalSoldTickets">0</h3>
+                        <p>Общее кол-во проданных билетов</p>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stats-card">
+                        <h3 id="totalRemainingTickets">0</h3>
+                        <p>Общее кол-во остатков билетов</p>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stats-card">
+                        <h3 id="totalSalesValue">0 ₸</h3>
+                        <p>Общая сумма продаж</p>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stats-card">
+                        <h3 id="salesCount">0</h3>
+                        <p>Количество транзакций</p>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stats-card">
+                        <h3 id="averageCheck">0 ₸</h3>
+                        <p>Средний чек</p>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stats-card" id="topChannelCard" style="display: none;">
+                        <h3 id="topChannel">-</h3>
+                        <p>Лучший канал</p>
+                    </div>
+                    <div class="stats-card" id="topEventCard">
+                        <h3 id="topEvent">-</h3>
+                        <p>Лучшее мероприятие</p>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-pie-chart me-2"></i>Распределение по типам продаж</h5>
+                        <canvas id="salesTypesChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-bar-chart me-2"></i>Продажи по каналам</h5>
+                        <canvas id="salesByChannelChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-line-chart me-2"></i>Продажи по датам сеансов</h5>
+                        <canvas id="salesByDateChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6" id="generalAnalytics">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-bar-chart me-2"></i>Продажи по мероприятиям</h5>
+                        <canvas id="salesByEventChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6" id="returnsByChannelContainer" style="display: none;">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-pie-chart me-2"></i>Возвраты по каналам</h5>
+                        <canvas id="returnsByChannelChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-bar-chart me-2"></i>Продажи по часам</h5>
+                        <canvas id="salesByHourChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-trophy me-2"></i>Топ-5 дней по продажам</h5>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Продажи (₸)</th>
+                                    <th>Транзакции</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topDaysTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sidebar-loader.js"></script>
+    <script src="../js/chart.min.js"></script>
+    <script src="../js/session_report.js"></script>
+</body>
+</html>

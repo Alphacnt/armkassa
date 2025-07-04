@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Заказы</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../assets/css/style.css" />
+  </head>
+  <body>
+    <main>
+      <div class="content-wrapper">
+        <div class="container-fluid p-4">
+          <div id="ordersPage">
+            <div class="main-container">
+              <div class="page-header">
+                <h1><i class="bi bi-receipt me-2"></i>Заказы</h1>
+              </div>
+              <div class="toolbar">
+                <div
+                  class="d-flex justify-content-between align-items-center flex-wrap gap-2"
+                >
+                  <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-primary" id="newOrderBtn">
+                      <i class="bi bi-plus-circle me-2"></i>Новый заказ
+                    </button>
+                    <button
+                      class="btn btn-outline-danger"
+                      id="deleteSelectedBtn"
+                      disabled
+                    >
+                      <i class="bi bi-trash me-2"></i>Удалить выбранные
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="filters-section">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="searchInput"
+                      placeholder="Поиск по всем колонкам..."
+                    />
+                  </div>
+                  <div class="col-md-2">
+                    <input type="date" class="form-control" id="dateFilter" />
+                  </div>
+                  <div class="col-md-2">
+                    <select class="form-select" id="statusFilter">
+                      <option value="">Все статусы</option>
+                      <option value="Оплачено">Оплачено</option>
+                      <option value="Не оплачен">Не оплачено</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="table-container">
+                <div class="d-flex justify-content-end mb-2">
+                  <select id="pageSizeSelect" class="form-select w-auto">
+                    <option value="5">5 записей</option>
+                    <option value="10">10 записей</option>
+                    <option value="20">20 записей</option>
+                    <option value="50" selected>50 записей</option>
+                    <option value="100">100 записей</option>
+                  </select>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th width="50"></th>
+                        <th>Номер</th>
+                        <th>Дата и время</th>
+                        <th>Сумма</th>
+                        <th>Оплаченная сумма</th>
+                        <th>Кол-во билетов</th>
+                        <th>Статус</th>
+                        <th>Тип продажи</th>
+                        <th>Действия</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ordersTable"></tbody>
+                  </table>
+                </div>
+                <div
+                  id="paginationContainer"
+                  class="paginationControls mt-3"
+                ></div>
+              </div>
+              <!-- Модальное окно создания заказа -->
+              <div class="modal fade" id="newOrderModal" tabindex="-1">
+                <div class="modal-dialog modal-xl">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Новый заказ</h5>
+                      <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                      ></button>
+                    </div>
+                    <div class="modal-body">
+                      <div id="step1">
+                        <h6 class="mb-3">Выберите дату</h6>
+                        <div class="row mb-3">
+                          <div class="col-md-4">
+                            <button
+                              class="btn btn-outline-primary w-100"
+                              onclick="selectDate('today')"
+                            >
+                              Сегодня
+                            </button>
+                          </div>
+                          <div class="col-md-4">
+                            <button
+                              class="btn btn-outline-primary w-100"
+                              onclick="selectDate('tomorrow')"
+                            >
+                              Завтра
+                            </button>
+                          </div>
+                          <div class="col-md-4">
+                            <input
+                              type="date"
+                              class="form-control"
+                              id="customDate"
+                              onchange="loadSessions()"
+                            />
+                          </div>
+                        </div>
+                        <h6 class="mb-3">Выберите сеанс</h6>
+                        <select
+                          class="form-select"
+                          id="sessionSelect"
+                          onchange="selectSession()"
+                        >
+                          <option value="">Выберите сеанс</option>
+                        </select>
+                      </div>
+                      <div id="step2" class="hidden">
+                        <div class="row">
+                          <div class="col-md-8">
+                            <h6 class="mb-3">Выбранный сеанс</h6>
+                            <div
+                              class="alert alert-info"
+                              id="selectedSessionInfo"
+                            ></div>
+                            <h6 class="mb-3">Выбор услуг</h6>
+                            <div id="servicesContainer">
+                              <div class="mb-3 service-select-wrapper">
+                                <select
+                                  class="form-select"
+                                  onchange="calculateTotal()"
+                                >
+                                  <option value="">Выберите услугу</option>
+                                </select>
+                              </div>
+                            </div>
+                            <button
+                              class="btn btn-outline-secondary mb-3"
+                              id="addServiceBtn"
+                              onclick="addServiceSelect()"
+                            >
+                              Добавить услугу
+                            </button>
+                            <div class="row mb-3">
+                              <div class="col-md-6">
+                                <label class="-form-label"
+                                  >Количество билетов:</label
+                                >
+                                <input
+                                  type="number"
+                                  class="form-control"
+                                  id="ticketCount"
+                                  min="1"
+                                  value="1"
+                                  onchange="calculateTotal()"
+                                />
+                              </div>
+                              <div class="col-md-6">
+                                <label class="form-label">Способ оплаты:</label>
+                                <select
+                                  class="form-select"
+                                  id="paymentMethod"
+                                  onchange="handlePaymentMethod()"
+                                >
+                                  <option value="card">Оплата картой</option>
+                                  <option value="cash">Оплата наличными</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div id="cashPaymentFields" class="hidden">
+                              <div class="row">
+                                <div class="col-md-4">
+                                  <label class="form-label"
+                                    >Сумма к оплате:</label
+                                  >
+                                  <input
+                                    type="number"
+                                    class="form-control"
+                                    id="totalDue"
+                                    readonly
+                                  />
+                                </div>
+                                <div class="col-md-4">
+                                  <label class="form-label"
+                                    >Сумма наличными:</label
+                                  >
+                                  <input
+                                    type="number"
+                                    class="form-control"
+                                    id="cashAmount"
+                                    min="0"
+                                    oninput="calculateChange()"
+                                  />
+                                </div>
+                                <div class="col-md-4">
+                                  <label class="form-label">Сдача:</label>
+                                  <input
+                                    type="number"
+                                    class="form-control"
+                                    id="changeAmount"
+                                    readonly
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <div class="summary-card">
+                              <h6>Итого к оплате</h6>
+                              <div class="d-flex justify-content-between mb-2">
+                                <span>Сумма билетов:</span>
+                                <span id="ticketsAmount">0 ₸</span>
+                              </div>
+                              <div class="d-flex justify-content-between mb-2">
+                                <span>Скидка:</span>
+                                <span id="discountAmount">0 ₸</span>
+                              </div>
+                              <hr />
+                              <div
+                                class="d-flex justify-content-between fw-bold"
+                              >
+                                <span>Итого:</span>
+                                <span id="totalAmount">0 ₸</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        id="backBtn"
+                        onclick="goBackStep()"
+                        style="display: none"
+                      >
+                        Назад
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                      >
+                        Отмена
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        id="nextBtn"
+                        onclick="nextStep()"
+                        disabled
+                      >
+                        Далее
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        id="payCardBtn"
+                        style="display: none"
+                      >
+                        Оплатить картой
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-success"
+                        id="createOrderBtn"
+                        style="display: none"
+                      >
+                        Создать заказ
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Модальное окно редактирования заказа -->
+              <div class="modal fade" id="editOrderModal" tabindex="-1">
+                <div class="modal-dialog modal-xl">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Редактировать заказ</h5>
+                      <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                      ></button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="row">
+                        <div class="col-md-8">
+                          <h6 class="mb-3">Выберите сеанс</h6>
+                          <div class="row mb-3">
+                            <div class="col-md-6">
+                              <input
+                                type="date"
+                                class="form-control"
+                                id="editCustomDate"
+                                onchange="loadEditSessions()"
+                              />
+                            </div>
+                            <div class="col-md-6">
+                              <select
+                                class="form-select"
+                                id="editSessionSelect"
+                              >
+                                <option value="">Выберите сеанс</option>
+                              </select>
+                            </div>
+                          </div>
+                          <h6 class="mb-3">Выбор услуг</h6>
+                          <div id="editServicesContainer">
+                            <div class="mb-3 service-select-wrapper">
+                              <select
+                                class="form-select"
+                                onchange="updateEditTotal()"
+                              >
+                                <option value="">Выберите услугу</option>
+                              </select>
+                            </div>
+                          </div>
+                          <button
+                            class="btn btn-outline-secondary mb-3"
+                            id="addEditServiceBtn"
+                            onclick="addEditServiceSelect()"
+                          >
+                            Добавить услугу
+                          </button>
+                          <div class="row mb-3">
+                            <div class="col-md-6">
+                              <label class="form-label"
+                                >Количество билетов:</label
+                              >
+                              <input
+                                type="number"
+                                class="form-control"
+                                id="editTicketCount"
+                                min="1"
+                                onchange="updateEditTotal()"
+                              />
+                            </div>
+                            <div class="col-md-6">
+                              <label class="form-label">Способ оплаты:</label>
+                              <select
+                                class="form-select"
+                                id="editPaymentMethod"
+                                onchange="handleEditPaymentMethod()"
+                              >
+                                <option value="card">Оплата картой</option>
+                                <option value="cash">Оплата наличными</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div id="editCashPaymentFields" class="hidden">
+                            <div class="row">
+                              <div class="col-md-4">
+                                <label class="form-label"
+                                  >Сумма к оплате:</label
+                                >
+                                <input
+                                  type="number"
+                                  class="form-control"
+                                  id="editTotalDue"
+                                  readonly
+                                />
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label"
+                                  >Сумма наличными:</label
+                                >
+                                <input
+                                  type="number"
+                                  class="form-control"
+                                  id="editCashAmount"
+                                  min="0"
+                                  oninput="calculateEditChange()"
+                                />
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label">Сдача:</label>
+                                <input
+                                  type="number"
+                                  class="form-control"
+                                  id="editChangeAmount"
+                                  readonly
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="summary-card">
+                            <h6>Итого к оплате</h6>
+                            <div class="d-flex justify-content-between mb-2">
+                              <span>Сумма билетов:</span>
+                              <span id="editTicketsAmount">0 ₸</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                              <span>Скидка:</span>
+                              <span id="editDiscountAmount">0 ₸</span>
+                            </div>
+                            <hr />
+                            <div class="d-flex justify-content-between fw-bold">
+                              <span>Итого:</span>
+                              <span id="editTotalAmount">0 ₸</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                      >
+                        Отмена
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        id="editPayCardBtn"
+                        style="display: none"
+                      >
+                        Оплатить картой
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        id="saveEditBtn"
+                      >
+                        Сохранить
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Модальное окно подтверждения удаления -->
+              <div class="modal fade" id="deleteOrderModal" tabindex="-1">
+                <div class="modal-dialog modal-sm">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Подтверждение удаления</h5>
+                      <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                      ></button>
+                    </div>
+                    <div class="modal-body">
+                      <p>
+                        Вы уверены, что хотите удалить заказ
+                        <strong id="deleteOrderId"></strong>?
+                      </p>
+                    </div>
+                    <div class="modal-footer">
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                      >
+                        Отмена
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-danger"
+                        id="confirmDeleteBtn"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="toast-container position-fixed top-0 end-0 p-3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sidebar-loader.js"></script>
+    <script src="../js/orders.js"></script>
+  </body>
+</html>

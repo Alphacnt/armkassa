@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сеансы мероприятий</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+    <main>
+        <div class="content-wrapper">
+            <div class="container-fluid p-4">
+                <div id="sessionsPage">
+                    <div class="main-container">
+                        <div class="page-header">
+                            <h1><i class="bi bi-calendar-event me-2"></i>Сеансы мероприятий</h1>
+                        </div>
+
+                        <div class="toolbar">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button class="btn btn-primary" id="newSessionBtn">
+                                        <i class="bi bi-plus-circle me-2"></i>Создать сеанс
+                                    </button>
+                                    <button class="btn btn-outline-danger" id="deleteSelectedBtn" disabled>
+                                        <i class="bi bi-trash me-2"></i>Удалить выбранные
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th width="50"><input type="checkbox" id="selectAll"></th>
+                                            <th>ID</th>
+                                            <th>Наименование</th>
+                                            <th>Дата начала</th>
+                                            <th>Дата окончания</th>
+                                            <th>Время</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sessionsTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Модальное окно создания сеанса -->
+                    <div class="modal fade" id="newSessionModal" tabindex="-1" aria-labelledby="newSessionModalLabel">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="newSessionModalLabel">Создать сеанс</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="newSessionForm">
+                                        <div class="mb-3">
+                                            <label class="form-label">Наименование <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="newName" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Шаблон мероприятия <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="newEventTemplate" required>
+                                                <option value="">Выберите мероприятие</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Дата начала <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control" id="newStartDate" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Дата окончания <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control" id="newEndDate" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Количество билетов <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control" id="newTicketCount" min="1" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Дни недели</label>
+                                            <div class="d-flex flex-wrap gap-3">
+                                                <div>
+                                                    <input type="checkbox" id="mon" name="days" value="Monday">
+                                                    <label for="mon">ПН</label>
+                                                </div>
+                                                <div>
+                                                    <input type="checkbox" id="tue" name="days" value="Tuesday">
+                                                    <label for="tue">ВТ</label>
+                                                </div>
+                                                <div>
+                                                    <input type="checkbox" id="wed" name="days" value="Wednesday">
+                                                    <label for="wed">СР</label>
+                                                </div>
+                                                <div>
+                                                    <input type="checkbox" id="thu" name="days" value="Thursday">
+                                                    <label for="thu">ЧТ</label>
+                                                </div>
+                                                <div>
+                                                    <input type="checkbox" id="fri" name="days" value="Friday">
+                                                    <label for="fri">ПТ</label>
+                                                </div>
+                                                <div>
+                                                    <input type="checkbox" id="sat" name="days" value="Saturday">
+                                                    <label for="sat">СБ</label>
+                                                </div>
+                                                <div>
+                                                    <input type="checkbox" id="sun" name="days" value="Sunday">
+                                                    <label for="sun">ВС</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div id="newTimesContainer">
+                                                <!-- Здесь будет динамически добавляться селектор времени -->
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                    <button type="button" class="btn btn-primary" id="createSessionBtn">Создать</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Модальное окно редактирования сеанса -->
+                    <div class="modal fade" id="editSessionModal" tabindex="-1" aria-labelledby="editSessionModalLabel">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="editSessionModalLabel">Редактировать сеанс</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="editSessionForm">
+                                        <div class="mb-3">
+                                            <label class="form-label">Наименование <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="editName" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Шаблон мероприятия <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="editEventTemplate" required>
+                                                <option value="">Выберите мероприятие</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Дата начала <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control" id="editStartDate" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Дата окончания <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control" id="editEndDate" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Количество билетов <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control" id="editTicketCount" min="1" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Дни недели</label>
+                                            <div class="d-flex flex-wrap gap-3">
+                                                <div>
+                                                    <input type="checkbox" id="editMon" name="editDays" value="Monday">
+                                                    <label for="editMon">ПН</label>
+                                                </div>
+                                                <div>
+                                                    <input type="checkbox" id="editTue" name="editDays" value="Tuesday">
+                                                    <label for="editTue">ВТ</label>
+                                                </div>
+                                                <div>
+                                                    <input type="checkbox" id="editWed" name="editDays" value="Wednesday">
+                                                    <label for="editWed">СР</label>
+                                                </div>
+                                                <div>
+                                                    <input type="checkbox" id="editThu" name="editDays" value="Thursday">
+                                                    <label for="editThu">ЧТ</label>
+                                                </div>
+                                                <div>
+                                                    <input type="checkbox" id="editFri" name="editDays" value="Friday">
+                                                    <label for="editFri">ПТ</label>
+                                                </div>
+                                                <div>
+                                                    <input type="checkbox" id="editSat" name="editDays" value="Saturday">
+                                                    <label for="editSat">СБ</label>
+                                                </div>
+                                                <div>
+                                                    <input type="checkbox" id="editSun" name="editDays" value="Sunday">
+                                                    <label for="editSun">ВС</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div id="editTimesContainer">
+                                                <!-- Здесь будет динамически добавляться селектор времени -->
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                    <button type="button" class="btn btn-primary" id="saveEditBtn">Сохранить</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Модальное окно подтверждения удаления -->
+                    <div class="modal fade" id="deleteSessionModal" tabindex="-1" aria-labelledby="deleteSessionModalLabel">
+                        <div class="modal-dialog modal-sm">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteSessionModalLabel">Подтверждение удаления</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Вы уверены, что хотите удалить сеанс <strong id="deleteSessionId"></strong>?</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Удалить</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="toast-container position-fixed top-0 end-0 p-3"></div>
+                </div>
+            </div>
+        </div>
+        
+        </main>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+        <script src="../js/sidebar-loader.js"></script>
+        <script src="../js/sessions.js"></script>
+    </body>
+</html>

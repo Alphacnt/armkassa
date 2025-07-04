@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="АРМ КАССА — удобная и быстрая кассовая система. Вход в систему.">
+    <title>АРМ Касса — Вход</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/loginstyle.css">
+</head>
+<body>
+    <main aria-label="Форма авторизации">
+        <div class="container-fluid login-container">
+            <div class="login-card">
+                <div class="logo-section" aria-label="Логотип АРМ КАССА">
+                    <div class="logo-icon"></div>
+                    <h1 class="system-title">АРМ КАССА</h1>
+                    <p class="system-subtitle">Авторизация в систему</p>
+                </div>
+
+                <form id="loginForm" autocomplete="on">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Логин</label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="username" 
+                            name="username"
+                            placeholder="Введите логин"
+                            required
+                            autocomplete="username"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">Пароль</label>
+                        <input 
+                            type="password" 
+                            class="form-control" 
+                            id="password" 
+                            name="password"
+                            placeholder="Введите пароль"
+                            required
+                            autocomplete="current-password"
+                        >
+                    </div>
+
+                    <button type="submit" class="btn btn-login">
+                        Войти в систему
+                    </button>
+                </form>
+
+                <div class="footer-text">
+                    Для получения доступа обратитесь к системному администратору
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="../js/login.js"></script>
+</body>
+</html>

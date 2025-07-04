@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройки терминала для кассира</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<main>
+    <div class="container-fluid p-4">
+        <div class="settings-container">
+            <div class="page-header">
+                <h1><i class="bi bi-gear me-2"></i>Настройки терминала</h1>
+            </div>
+            <form id="terminalSettingsForm">
+                <div class="form-group">
+                    <label for="ipAddress" class="form-label">IP Address</label>
+                    <input type="text" class="form-control" id="ipAddress" placeholder="Введите IP-адрес (например, 192.168.1.1)">
+                </div>
+                <div class="form-group">
+                    <label for="port" class="form-label">Port</label>
+                    <input type="number" class="form-control" id="port" placeholder="Введите порт (например, 8080)">
+                </div>
+                <div class="form-group form-check">
+                    <input type="checkbox" class="form-check-input" id="useHttps">
+                    <label class="form-check-label" for="useHttps">Use HTTPS</label>
+                </div>
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" placeholder="Введите имя пользователя">
+                </div>
+                <div class="form-group">
+                    <label for="accessToken" class="form-label">Access Token</label>
+                    <input type="text" class="form-control" id="accessToken" placeholder="Введите Access Token">
+                </div>
+                <div class="form-group">
+                    <label for="refreshToken" class="form-label">Refresh Token</label>
+                    <input type="text" class="form-control" id="refreshToken" placeholder="Введите Refresh Token">
+                </div>
+                <div class="form-group">
+                    <label for="expirationDate" class="form-label">Expiration Date</label>
+                    <input type="date" class="form-control" id="expirationDate">
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" id="registerBtn">Регистрация</button>
+                    <button type="button" class="btn btn-warning" id="refreshTokenBtn">Обновить токен доступа</button>
+                    <button type="button" class="btn btn-success" id="saveSettingsBtn">Сохранить настройки</button>
+                </div>
+            </form>
+            <div id="statusAlert" class="alert alert-info" role="alert"></div>
+        </div>
+    </div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sidebar-loader.js"></script>
+    <script src="../js/terminal_settings.js"></script>
+</body>
+</html>

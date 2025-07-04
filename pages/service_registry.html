@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реестр видов услуг</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<main>
+<div class="container-fluid p-4">
+        <!-- Основная страница с реестром услуг -->
+        <div id="mainPage">
+            <div class="main-container">
+                <div class="page-header">
+                    <h1><i class="bi bi-list-check me-2"></i>Реестр видов услуг</h1>
+                </div>
+                <div class="filters-section">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label">Дата с</label>
+                            <input type="date" class="form-control" id="dateFrom">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Дата по</label>
+                            <input type="date" class="form-control" id="dateTo">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label"> </label>
+                            <button class="btn btn-primary w-100" id="newReportBtn">
+                                <i class="bi bi-plus-circle me-2"></i>Сформировать отчет
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label"> </label>
+                            <button class="btn btn-success w-100" id="exportExcelBtn">
+                                <i class="bi bi-file-earmark-excel me-2"></i>Экспорт в Excel
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label"> </label>
+                            <button class="btn btn-secondary w-100" id="toggleFiltersBtn">
+                                <i class="bi bi-filter me-2"></i>Дополнительные фильтры
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Поиск</label>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Поиск по всем колонкам...">
+                        </div>
+                    </div>
+                    <div id="additionalFilters" style="display: none;" class="mt-3">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Виды услуг</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="serviceKatanie" value="Катание">
+                                    <label class="form-check-label" for="serviceKatanie">Катание</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="serviceVystavka" value="Выставка">
+                                    <label class="form-check-label" for="serviceVystavka">Выставка</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-container mt-3">
+                    <div class="table-responsive">
+                        <table class="table service-table">
+                            <thead>
+                                <tr>
+                                    <th>№</th>
+                                    <th>Наименование услуги</th>
+                                    <th>Кол-во</th>
+                                    <th>Сумма</th>
+                                </tr>
+                            </thead>
+                            <tbody id="serviceTable"></tbody>
+                            <tfoot>
+                                <tr class="total-row">
+                                    <td colspan="2">Итого:</td>
+                                    <td><span id="totalCount">0</span></td>
+                                    <td><span id="totalSum">0 ₸</span></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="toast-container position-fixed top-0 end-0 p-3"></div>
+        </div>
+
+        <!-- Дашборд аналитики услуг -->
+        <div id="dashboardPage" class="dashboard-container" style="display: none;">
+            <div class="dashboard-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1><i class="bi bi-graph-up me-2"></i>Аналитика реестра услуг</h1>
+                        <p class="mb-0 opacity-75" id="dashboardSubtitle">Выберите услуги для анализа</p>
+                    </div>
+                    <button class="btn btn-light" id="backToMainBtn">
+                        <i class="bi bi-arrow-left me-2"></i>Назад к реестру
+                    </button>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="stats-card">
+                        <h3 id="totalServices">0</h3>
+                        <p>Общее кол-во услуг</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stats-card">
+                        <h3 id="totalTicketsSold">0</h3>
+                        <p>Общее кол-во билетов</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stats-card">
+                        <h3 id="totalRevenue">0 ₸</h3>
+                        <p>Общая выручка</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-pie-chart me-2"></i>Распределение по услугам</h5>
+                        <canvas id="servicesChart" width="400" height="300"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-bar-chart me-2"></i>Выручка по датам</h5>
+                        <canvas id="revenueByDateChart" width="400" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sidebar-loader.js"></script>
+    <script src="../js/chart.min.js"></script>
+    <script src="../js/service_registry.js"></script>
+</body>
+</html>

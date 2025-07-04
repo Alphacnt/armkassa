@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+body {
+  font-family: "Montserrat", sans-serif;
+  background-color: var(--secondary-color);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 2rem;
+  width: 100%;
+  max-width: 380px;
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-section {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.logo-icon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #0066cc, #004499);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.8rem;
+  position: relative;
+}
+
+.system-title {
+  color: #2c3e50;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.system-subtitle {
+  color: #6c757d;
+  font-size: 0.85rem;
+  margin-bottom: 0;
+}
+
+.form-label {
+  color: #495057;
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+  display: block; /* Гарантируем, что метка занимает отдельную строку */
+}
+
+.form-control {
+  border: 1px solid #e9ecef; /* Унифицируем с index.html */
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.95rem; /* Чуть больше для читаемости */
+  transition: all 0.3s ease;
+  background-color: #fafbfc;
+  width: 100%; /* Убедимся, что поле занимает всю ширину */
+}
+
+.form-control:focus {
+  border-color: #0066cc;
+  box-shadow: 0 0 0 0.15rem rgba(0, 102, 204, 0.1);
+  background-color: white;
+}
+
+.form-control:hover {
+  border-color: #bdc3c9;
+}
+
+.btn-login {
+  background: linear-gradient(135deg, #0066cc, #004499);
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: white;
+  width: 100%;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-login:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
+  background: linear-gradient(135deg, #0052a3, #003366);
+}
+
+.btn-login:active {
+  transform: translateY(0);
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.footer-text {
+  text-align: center;
+  color: #6c757d;
+  font-size: 0.8rem;
+  margin-top: 1.5rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid #e9ecef;
+}

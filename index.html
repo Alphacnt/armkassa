@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Принятые платежи</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+
+<body>
+  <main>
+    <div class="container-fluid p-4">
+      <div class="performance-grid">
+        <div class="performance-item">
+          <div class="performance-value" id="todayPayments">0</div>
+          <div class="performance-label">Всего собрано</div>
+          <div class="success-rate-indicator">
+            <div class="success-rate-fill-main" id="successRateFillMain"></div> <!-- Изменено id -->
+          </div>
+        </div>
+        <div class="performance-item">
+          <div class="performance-value" id="todayVisitors">0</div>
+          <div class="performance-label">Количество транзакций</div>
+        </div>
+        <div class="performance-item">
+          <div class="performance-value" id="todayRevenue">0 ₸</div>
+          <div class="performance-label">Среднее пожертвование</div>
+        </div>
+        <div class="performance-item">
+          <div class="performance-value" id="todayGrowth">0</div>
+          <div class="performance-label">Работает объектов:</div>
+        </div>
+      </div>
+
+      <div id="mainPage">
+        <div class="main-container">
+          <div class="page-header">
+            <h1><i class="bi bi-credit-card me-2"></i>Принятые платежи</h1>
+          </div>
+          <div class="filters-section mt-2">
+            <div class="row g-3">
+              <div class="col-md-2">
+                <label class="form-label">Дата с</label>
+                <input type="date" class="form-control" id="dateFrom" />
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Дата по</label>
+                <input type="date" class="form-control" id="dateTo" />
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-primary filter-button" onclick="window.filterData()">
+                  <i class="bi bi-search"></i> Найти
+                </button>
+              </div>
+              <div class="col-md-3 ms-auto">
+                <label class="form-label">Поиск</label>
+                <input type="text" class="form-control search-input" id="searchInput"
+                  placeholder="Поиск по всем колонкам..." />
+              </div>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <div class="d-flex justify-content-end mb-2">
+              <select id="pageSizeSelect" class="form-select w-auto">
+                <option value="5">5 записей</option>
+                <option value="10">10 записей</option>
+                <option value="20">20 записей</option>
+                <option value="50" selected>50 записей</option>
+                <option value="100">100 записей</option>
+              </select>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Объект</th>
+                    <th>Терминал</th>
+                    <th>Дата платежа</th>
+                    <th>Тип платежа</th>
+                    <th>Сумма платежа</th>
+                    <th>Сумма возврата</th>
+                    <th>ID процесса</th>
+                    <th>ID транзакции</th>
+                    <th>Статус</th>
+                  </tr>
+                </thead>
+                <tbody id="paymentsTable"></tbody>
+              </table>
+            </div>
+            <div id="paginationControls" class="paginationControls mt-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="dashboardPage" class="dashboard-container" style="display: none">
+        <div class="dashboard-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h1 id="dashboardTitle">
+                <i class="bi bi-graph-up me-2"></i>Расширенная аналитика платежей
+              </h1>
+              <p class="mb-0 opacity-75" id="dashboardSubtitle">
+                Детальный анализ по объекту
+              </p>
+            </div>
+            <button class="btn btn-light ms-auto" onclick="window.backToMain()">
+              <i class="bi bi-arrow-left me-2"></i>Назад
+            </button>
+          </div>
+        </div>
+
+        <div class="performance-grid">
+          <div class="performance-item">
+            <div class="performance-value" id="successRate">0%</div>
+            <div class="performance-label">Успешность платежей</div>
+            <div class="success-rate-indicator">
+              <div class="success-rate-fill" id="successRateFill"></div>
+            </div>
+          </div>
+          <div class="performance-item">
+            <div class="performance-value" id="avgAmount">0 ₸</div>
+            <div class="performance-label">Средний чек</div>
+          </div>
+          <div class="performance-item">
+            <div class="performance-value" id="maxAmount">0 ₸</div>
+            <div class="performance-label">Максимальный платеж</div>
+          </div>
+          <div class="performance-item">
+            <div class="performance-value" id="refundRate">0%</div>
+            <div class="performance-label">Доля возвратов</div>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-lg-4">
+            <div class="chart-container">
+              <h5><i class="bi bi-pie-chart me-2"></i>Типы платежей</h5>
+              <canvas id="paymentTypesChart"></canvas>
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <div class="chart-container">
+              <h5><i class="bi bi-graph-up me-2"></i>Динамика платежей</h5>
+              <canvas id="dailyPaymentsChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-lg-4">
+            <div class="chart-container mini-chart-container">
+              <h5><i class="bi bi-bar-chart me-2"></i>Статусы платежей</h5> <!-- Добавлен statusChart -->
+              <canvas id="statusChart"></canvas>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="chart-container mini-chart-container">
+              <h5><i class="bi bi-clock me-2"></i>Активность по часам</h5>
+              <canvas id="hourlyChart"></canvas>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="chart-container mini-chart-container">
+              <h5><i class="bi bi-calendar me-2"></i>Платежи по дням недели</h5>
+              <canvas id="weekdayChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-lg-6">
+            <div class="chart-container">
+              <h5><i class="bi bi-pc-display me-2"></i>Эффективность терминалов</h5>
+              <canvas id="terminalChart"></canvas>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="chart-container">
+              <h5><i class="bi bi-grid me-2"></i>Карта платежей по времени</h5>
+              <canvas id="heatmapChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-lg-12">
+            <div class="activity-timeline">
+              <h5><i class="bi bi-clock-history me-2"></i>Последние действия</h5>
+              <div id="activityTimeline"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer class="main-footer" id="mainFooter">
+    <div class="container-fluid">
+      <p class="footer-text">© 2025 TM-Systems</p>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+  <script src="js/chart.min.js"></script> <!-- Обновлено на Chart.js 4.x -->
+  <script src="js/sidebar-loader.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Контрагенты</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+
+<body>
+    <main>
+        <div class="content-wrapper">
+            <div class="container-fluid p-4">
+                <div id="counterpartiesPage">
+                    <div class="main-container">
+                        <div class="page-header">
+                            <h1><i class="bi bi-people me-2"></i>Контрагенты</h1>
+                        </div>
+
+                        <div class="toolbar">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button class="btn btn-primary" id="newCounterpartyBtn"
+                                        onclick="showNewCounterpartyModal()">
+                                        <i class="bi bi-plus-circle me-2"></i>Создать контрагента
+                                    </button>
+                                    <button class="btn btn-outline-danger" id="deleteSelectedBtn"
+                                        onclick="deleteSelected()" disabled>
+                                        <i class="bi bi-trash me-2"></i>Удалить выбранные
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th width="50"></th>
+                                            <th>ID</th>
+                                            <th>Наименование</th>
+                                            <th>БИН</th>
+                                            <th>Банк</th>
+                                            <th>Лицевой счёт</th>
+                                            <th>БИК</th>
+                                            <th>Юридический адрес</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="counterpartiesTable">
+                                        <!-- Данные будут загружены через JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Модальное окно создания контрагента -->
+                    <div class="modal fade" id="newCounterpartyModal" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Создать контрагента</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Наименование</label>
+                                        <input type="text" class="form-control" id="newName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">БИН</label>
+                                        <input type="text" class="form-control" id="newBin" maxlength="12"
+                                            pattern="\d{12}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Банк</label>
+                                        <input type="text" class="form-control" id="newBank">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Лицевой счёт</label>
+                                        <input type="text" class="form-control" id="newAccount" maxlength="20"
+                                            pattern="\d{20}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">БИК</label>
+                                        <input type="text" class="form-control" id="newBik" maxlength="8"
+                                            pattern="\d{8}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Юридический адрес</label>
+                                        <input type="text" class="form-control" id="newLegalAddress">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Отмена</button>
+                                    <button type="button" class="btn btn-primary"
+                                        onclick="createCounterparty()">Создать</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Модальное окно редактирования контрагента -->
+                    <div class="modal fade" id="editCounterpartyModal" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Редактировать контрагента</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Наименование</label>
+                                        <input type="text" class="form-control" id="editName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">БИН</label>
+                                        <input type="text" class="form-control" id="editBin" maxlength="12"
+                                            pattern="\d{12}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Банк</label>
+                                        <input type="text" class="form-control" id="editBank">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Лицевой счёт</label>
+                                        <input type="text" class="form-control" id="editAccount" maxlength="20"
+                                            pattern="\d{20}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">БИК</label>
+                                        <input type="text" class="form-control" id="editBik" maxlength="8"
+                                            pattern="\d{8}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Юридический адрес</label>
+                                        <input type="text" class="form-control" id="editLegalAddress">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Отмена</button>
+                                    <button type="button" class="btn btn-primary" id="saveEditBtn"
+                                        onclick="saveEdit()">Сохранить</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Модальное окно подтверждения удаления -->
+                    <div class="modal fade" id="deleteCounterpartyModal" tabindex="-1">
+                        <div class="modal-dialog modal-sm">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Подтверждение удаления</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Вы уверены, что хотите удалить контрагента <strong
+                                            id="deleteCounterpartyId"></strong>?</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Отмена</button>
+                                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn"
+                                        onclick="confirmDelete()">Удалить</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="toast-container position-fixed top-0 end-0 p-3"></div>
+                </div>
+            </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sidebar-loader.js"></script>
+    <script src="../js/counterparties.js"></script>
+</body>
+
+</html>

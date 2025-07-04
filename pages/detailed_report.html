@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детальный отчет по полученным платежам</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<main>
+    <div class="container-fluid p-4">
+        <!-- Основная страница с детальным отчетом -->
+        <div id="mainPage">
+            <div class="main-container">
+                <div class="page-header">
+                    <h1><i class="bi bi-file-text me-2"></i>Детальный отчет по полученным платежам</h1>
+                </div>
+                <div class="filters-section mt-3">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label">Дата с</label>
+                            <input type="date" class="form-control" id="dateFrom">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Дата по</label>
+                            <input type="date" class="form-control" id="dateTo">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label"> </label>
+                            <button class="btn btn-primary w-100" id="newReportBtn">
+                                <i class="bi bi-plus-circle me-2"></i>Сформировать отчет
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label"> </label>
+                            <button class="btn btn-primary w-100" id="showAllAnalyticsBtn">
+                                <i class="bi bi-bar-chart me-2"></i>Общая аналитика
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label"> </label>
+                            <button class="btn btn-success w-100" id="exportExcelBtn">
+                                <i class="bi bi-file-earmark-excel me-2"></i>Экспорт в Excel
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Поиск</label>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Поиск по всем колонкам...">
+                        </div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div class="d-flex justify-content-end mb-2">
+                        <select id="pageSizeSelect" class="form-select w-auto">
+                            <option value="5">5 записей</option>
+                            <option value="10">10 записей</option>
+                            <option value="20">20 записей</option>
+                            <option value="50" selected>50 записей</option>
+                            <option value="100">100 записей</option>
+                        </select>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>№</th>
+                                    <th>Название объекта</th>
+                                    <th>ID терминала</th>
+                                    <th>Сумма платежа</th>
+                                    <th>Тип оплаты</th>
+                                    <th>Дата и время</th>
+                                    <th>БИН контрагента</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailedTable"></tbody>
+                        </table>
+                    </div>
+                    <div id="paginationContainer" class="paginationControls mt-3"></div>
+                </div>
+            </div>
+            <div class="toast-container position-fixed top-0 end-0 p-3"></div>
+        </div>
+
+        <!-- Дашборд аналитики -->
+        <div id="dashboardPage" class="dashboard-container" style="display: none;">
+            <div class="dashboard-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1><i class="bi bi-graph-up me-2"></i>Аналитика платежей</h1>
+                        <p class="mb-0 opacity-75" id="dashboardSubtitle"></p>
+                    </div>
+                    <button class="btn btn-light" onclick="window.detailedReportBackToMain()">
+                        <i class="bi bi-arrow-left me-2"></i>Вернуться к отчету
+                    </button>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-2">
+                    <div class="stats-card">
+                        <h3 id="totalAmount">0 ₸</h3>
+                        <p>Общая сумма транзакций</p>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stats-card">
+                        <h3 id="totalTerminals">0</h3>
+                        <p id="totalTerminalsLabel">Всего терминалов</p>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stats-card">
+                        <h3 id="totalTransactions">0</h3>
+                        <p>Количество транзакций</p>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stats-card">
+                        <h3 id="avgAmount">0 ₸</h3>
+                        <p>Средняя сумма транзакции</p>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stats-card">
+                        <h3 id="topTerminal">-</h3>
+                        <p id="topTerminalLabel">Самый активный</p>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stats-card">
+                        <h3 id="kaspiShare">0%</h3>
+                        <p>Доля Kaspi</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-pie-chart me-2"></i>Распределение по типам платежей</h5>
+                        <canvas id="paymentTypesChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-bar-chart me-2"></i>Поступления по датам</h5>
+                        <canvas id="paymentByDateChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-bar-chart me-2"></i>Выручка по терминалам</h5>
+                        <canvas id="terminalRevenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-bar-chart me-2"></i>Транзакции по часам</h5>
+                        <canvas id="hourlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-bar-chart me-2"></i>Топ терминалов</h5>
+                        <canvas id="topTerminalsChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h5><i class="bi bi-bar-chart me-2"></i>Транзакции по терминалам</h5>
+                        <canvas id="terminalTransactionsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="../js/chart.min.js"></script>
+<script src="../js/dashboard.js"></script>
+<script src="../js/sidebar-loader.js"></script>
+<script src="../js/detailed_report.js"></script>
+</body>
+</html>

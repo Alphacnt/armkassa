@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Услуги</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+    <main>
+<div class="content-wrapper">
+    <div class="container-fluid p-4">
+        <div id="servicesPage">
+            <div class="main-container">
+                <div class="page-header">
+                    <h1><i class="bi bi-gear me-2"></i>Услуги</h1>
+                </div>
+
+                <div class="toolbar">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-primary" id="newServiceBtn">
+                                <i class="bi bi-plus-circle me-2"></i>Добавить услугу
+                            </button>
+                            <button class="btn btn-outline-danger" id="deleteSelectedBtn" disabled>
+                                <i class="bi bi-trash me-2"></i>Удалить выбранные
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th width="50"></th>
+                                    <th>ID</th>
+                                    <th>Наименование</th>
+                                    <th>Стоимость</th>
+                                    <th>Инвентарь</th>
+                                    <th>Учитывать в подсчёте билетов</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="servicesTable">
+                                <!-- Данные будут загружены через JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Модальное окно создания услуги -->
+            <div class="modal fade" id="newServiceModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Добавить услугу</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Наименование</label>
+                                <input type="text" class="form-control" id="newName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Стоимость</label>
+                                <input type="number" class="form-control" id="newCost" min="0" step="0.01" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Инвентарь</label>
+                                <div id="newInventoryContainer">
+                                    <!-- Чекбоксы будут загружены через JavaScript -->
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check custom-checkbox">
+                                    <input class="form-check-input" type="checkbox" id="newCountInTickets">
+                                    <label class="form-check-label" for="newCountInTickets">Учитывать в подсчёте билетов</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Виды продаж</label>
+                                <div id="newSalesChannelsContainer">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="salesKaspi" value="Kaspi">
+                                        <label class="form-check-label" for="salesKaspi">Kaspi</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="salesWebsite" value="Сайт">
+                                        <label class="form-check-label" for="salesWebsite">Сайт</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="salesKiosk" value="Киоск">
+                                        <label class="form-check-label" for="salesKiosk">Киоск</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="salesCashier" value="Касса">
+                                        <label class="form-check-label" for="salesCashier">Касса</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="button" class="btn btn-primary" id="createServiceBtn">Создать</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Модальное окно редактирования услуги -->
+            <div class="modal fade" id="editServiceModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Редактировать услугу</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Наименование</label>
+                                <input type="text" class="form-control" id="editName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Стоимость</label>
+                                <input type="number" class="form-control" id="editCost" min="0" step="0.01" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Инвентарь</label>
+                                <div id="editInventoryContainer">
+                                    <!-- Чекбоксы будут загружены через JavaScript -->
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check custom-checkbox">
+                                    <input class="form-check-input" type="checkbox" id="editCountInTickets">
+                                    <label class="form-check-label" for="editCountInTickets">Учитывать в подсчёте билетов</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Виды продаж</label>
+                                <div id="editSalesChannelsContainer">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="editSalesKaspi" value="Kaspi">
+                                        <label class="form-check-label" for="editSalesKaspi">Kaspi</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="editSalesWebsite" value="Сайт">
+                                        <label class="form-check-label" for="editSalesWebsite">Сайт</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="editSalesKiosk" value="Киоск">
+                                        <label class="form-check-label" for="editSalesKiosk">Киоск</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="editSalesCashier" value="Касса">
+                                        <label class="form-check-label" for="editSalesCashier">Касса</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="button" class="btn btn-primary" id="saveEditBtn">Сохранить</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Модальное окно подтверждения удаления -->
+            <div class="modal fade" id="deleteServiceModal" tabindex="-1">
+                <div class="modal-dialog modal-sm">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Подтверждение удаления</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Вы уверены, что хотите удалить услугу <strong id="deleteServiceId"></strong>?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Удалить</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="toast-container position-fixed top-0 end-0 p-3"></div>
+        </div>
+    </div>
+</div>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sidebar-loader.js"></script>
+    <script src="../js/services.js"></script>
+</body>
+</html>
