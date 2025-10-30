@@ -108,8 +108,8 @@ const DataModule = {
             'Касса (QR/карта)': totals.qrCard,
             'Касса (наличные)': totals.cash,
             'Киоск': totals.kiosk,
-            'Muzaidyny.kz (KaspiQR)': totals.muzaidynyKaspi,
-            'Muzaidyny.kz (Карта)': totals.muzaidynyCard,
+            'KassaPay.kz (KaspiQR)': totals.muzaidynyKaspi,
+            'KassaPay.kz (Карта)': totals.muzaidynyCard,
             'Kaspi платежи': totals.kaspi
         };
         const topChannel = Object.entries(channels).reduce((a, b) => a[1] > b[1] ? a : b, ['', 0]);
@@ -317,8 +317,8 @@ const ChartModule = {
             'Касса (QR/карта)': totals.qrCard,
             'Касса (наличные)': totals.cash,
             'Киоск': totals.kiosk,
-            'Muzaidyny.kz (KaspiQR)': totals.muzaidynyKaspi,
-            'Muzaidyny.kz (Карта)': totals.muzaidynyCard,
+            'KassaPay.kz (KaspiQR)': totals.muzaidynyKaspi,
+            'KassaPay.kz (Карта)': totals.muzaidynyCard,
             'Kaspi платежи': totals.kaspi
         };
 
@@ -359,8 +359,8 @@ const ChartModule = {
             'Касса (QR/карта)': totals.qrCard,
             'Касса (наличные)': totals.cash,
             'Киоск': totals.kiosk,
-            'Muzaidyny.kz (KaspiQR)': totals.muzaidynyKaspi,
-            'Muzaidyny.kz (Карта)': totals.muzaidynyCard,
+            'KassaPay.kz (KaspiQR)': totals.muzaidynyKaspi,
+            'KassaPay.kz (Карта)': totals.muzaidynyCard,
             'Kaspi платежи': totals.kaspi
         };
         this.charts.salesByChannelChart = new Chart(ctx, {
@@ -478,8 +478,8 @@ const ChartModule = {
             'Касса (QR/карта)': totalSales ? totals.returns * (totals.qrCard / totalSales) : 0,
             'Касса (наличные)': totalSales ? totals.returns * (totals.cash / totalSales) : 0,
             'Киоск': totalSales ? totals.returns * (totals.kiosk / totalSales) : 0,
-            'Muzaidyny.kz (KaspiQR)': totalSales ? totals.returns * (totals.muzaidynyKaspi / totalSales) : 0,
-            'Muzaidyny.kz (Карта)': totalSales ? totals.returns * (totals.muzaidynyCard / totalSales) : 0,
+            'KassaPay.kz (KaspiQR)': totalSales ? totals.returns * (totals.muzaidynyKaspi / totalSales) : 0,
+            'KassaPay.kz (Карта)': totalSales ? totals.returns * (totals.muzaidynyCard / totalSales) : 0,
             'Kaspi платежи': totalSales ? totals.returns * (totals.kaspi / totalSales) : 0
         };
         this.charts.returnsByChannelChart = new Chart(ctx, {
