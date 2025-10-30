@@ -587,6 +587,84 @@ const ChartModule = {
                 plugins: { legend: { display: false } }
             }
         });
+    },
+
+    // Новый: обзор по билетам (pie) — с maintainAspectRatio=false и защита высоты контейнера
+    createTicketsOverviewChart() {
+        const canvas = document.getElementById('ticketsOverviewChart');
+        if (!canvas) return;
+        const parent = canvas.parentElement;
+        if (parent) parent.style.minHeight = '280px';
+        const ctx = canvas.getContext('2d');
+
+        if (this.charts.ticketsOverviewChart) {
+            try { this.charts.ticketsOverviewChart.destroy(); } catch (e) { /* ignore */ }
+            this.charts.ticketsOverviewChart = null;
+        }
+
+        const totals = TicketModule.getTotals();
+        const data = [totals.activated, totals.notActivated, totals.unsold];
+        const labels = ['Активированные', 'Не активированные', 'Не проданные'];
+        const colors = ['#6366f1', '#f59e0b', '#ef4444'];
+
+        this.charts.ticketsOverviewChart = new Chart(ctx, {
+            type: 'pie',
+            data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: '#fff', borderWidth: 2 }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label(context) {
+                                const val = context.parsed || 0;
+                                const total = data.reduce((s, v) => s + v, 0) || 1;
+                                const perc = ((val / total) * 100).toFixed(1);
+                                return `${context.label}: ${val} (${perc}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    },
+
+    // Новый: распределение по категориям (stacked bar) — защита высоты контейнера
+    createTicketsByCategoryChart() {
+        const canvas = document.getElementById('ticketsByCategoryChart');
+        if (!canvas) return;
+        const parent = canvas.parentElement;
+        if (parent) parent.style.minHeight = '360px';
+        const ctx = canvas.getContext('2d');
+
+        if (this.charts.ticketsByCategoryChart) {
+            try { this.charts.ticketsByCategoryChart.destroy(); } catch (e) { /* ignore */ }
+            this.charts.ticketsByCategoryChart = null;
+        }
+
+        const { labels, activated, notActivated, unsold } = TicketModule.getCategoryArrays();
+
+        this.charts.ticketsByCategoryChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Активированные', data: activated, backgroundColor: '#6366f1' },
+                    { label: 'Не активированные', data: notActivated, backgroundColor: '#f59e0b' },
+                    { label: 'Не проданные', data: unsold, backgroundColor: '#ef4444' }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                },
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
     }
 };
 
@@ -770,9 +848,53 @@ window.salesReportShowDashboard = function (eventName, rowDate, analyticsDateTo)
         // если показаны все объекты — отображаем сводную диаграмму по видам услуг
         ChartModule.createSalesByEventChart(data);
     }
+
+    // Новые чарты по билетам
+    ChartModule.createTicketsOverviewChart();
+    ChartModule.createTicketsByCategoryChart();
 };
 
-// ...existing code...
+const TicketModule = {
+    totalTickets: 2000,
+    categories: {
+        'Взрослый билет (Гражданин РК)': { total: 600, activated: 450, notActivated: 120, unsold: 30 },
+        'Абонемент (Акимат)': { total: 150, activated: 100, notActivated: 40, unsold: 10 },
+        'Абонемент (Комиссия)': { total: 100, activated: 70, notActivated: 25, unsold: 5 },
+        'Дети школьного возраста': { total: 250, activated: 180, notActivated: 60, unsold: 10 },
+        'Пенсионеры': { total: 100, activated: 70, notActivated: 25, unsold: 5 },
+        'Студент': { total: 200, activated: 150, notActivated: 40, unsold: 10 },
+        'Экскурсия для детей': { total: 80, activated: 60, notActivated: 18, unsold: 2 },
+        'Экскурсия на английском языке': { total: 70, activated: 50, notActivated: 18, unsold: 2 },
+        'Экскурсия на казахском и русском языке': { total: 120, activated: 90, notActivated: 25, unsold: 5 },
+        'Сервис аудиогида': { total: 50, activated: 30, notActivated: 18, unsold: 2 },
+        'Иностранным гражданам стран СНГ': { total: 200, activated: 140, notActivated: 50, unsold: 10 },
+        'Иностранным гражданам иных государств': { total: 80, activated: 60, notActivated: 18, unsold: 2 }
+    },
+    getTotals() {
+        const totals = { activated: 0, notActivated: 0, unsold: 0, total: 0 };
+        Object.values(this.categories).forEach(c => {
+            totals.activated += c.activated || 0;
+            totals.notActivated += c.notActivated || 0;
+            totals.unsold += c.unsold || 0;
+            totals.total += c.total || 0;
+        });
+        if (this.totalTickets && totals.total !== this.totalTickets) {
+            totals.total = this.totalTickets;
+        }
+        return totals;
+    },
+    getCategoryArrays() {
+        const labels = Object.keys(this.categories);
+        const activated = [], notActivated = [], unsold = [];
+        labels.forEach(lbl => {
+            const c = this.categories[lbl] || {};
+            activated.push(c.activated || 0);
+            notActivated.push(c.notActivated || 0);
+            unsold.push(c.unsold || 0);
+        });
+        return { labels, activated, notActivated, unsold };
+    }
+};
 
 window.salesReportBackToMain = function () {
     console.log('Returning to main page');
