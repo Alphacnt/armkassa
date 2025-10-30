@@ -1,163 +1,172 @@
 <!-- Toggle Button -->
-    <header class="main-header">
-        <div class="header-left">
-            <button class="header-burger" id="toggleSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
+<header class="main-header">
+    <div class="header-left">
+        <button class="header-burger" id="toggleSidebar">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+
+    <div class="header-center">
+        <h1 class="app-title">KassaPay</h1>
+    </div>
+
+    <div class="header-right">
+        <div class="user-greeting">
+            <i class="fas fa-circle"></i>
+            Привет, Аль-Фараби!
         </div>
-        
-        <div class="header-center">
-            <h1 class="app-title">ArmKassa</h1>
-        </div>
-        
-        <div class="header-right">
-            <div class="user-greeting">
-                <i class="fas fa-circle"></i>
-                Привет, Аль-Фараби!
+        <div class="notification-wrapper">
+            <div class="notification-icon">
+                <i class="fas fa-bell"></i>
             </div>
-            <div class="notification-wrapper">
-                <div class="notification-icon">
-                    <i class="fas fa-bell"></i>
-                </div>
-                <div class="notification-badge"></div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Overlay -->
-    <div class="overlay" id="overlay"></div>
-
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h2 class="sidebar-title">arm kassa</h2>
-            <p class="sidebar-subtitle">Удобная система</p>
-        </div>
-        
-        <div class="sidebar-content">
-            <!-- Основное меню -->
-            <div class="nav-section">
-                <h6 class="section-title">Основное</h6>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.html">
-                            <i class="fas fa-home"></i>
-                            Принятые пожертвования
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="orders.html">
-                            <i class="fas fa-chart-line"></i>
-                            Заказы билетов
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Разделы с подменю -->
-            <div class="nav-section">
-                <h6 class="section-title">Разделы</h6>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link collapsed" data-bs-toggle="collapse" href="#projectsSubmenu" role="button" aria-expanded="false" aria-controls="projectsSubmenu">
-                            <i class="fas fa-folder"></i>
-                            Справочники
-                            <i class="fas fa-chevron-right chevron"></i>
-                        </a>
-                        <div class="collapse submenu" id="projectsSubmenu">
-                            <ul class="nav flex-column">
-                                <li class="nav-item">
-                                    <a class="nav-link" href="counterparties.html">Контрагенты</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="objects.html">Объекты</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="terminals.html">Терминалы</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="events.html">Мероприятия</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="sessions.html">Сеансы мероприятий</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="inventory.html">Инвентарь</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="services.html">Услуги</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
-                    
-                    <li class="nav-item">
-                        <a class="nav-link collapsed" data-bs-toggle="collapse" href="#analyticsSubmenu" role="button" aria-expanded="false" aria-controls="analyticsSubmenu">
-                            <i class="fas fa-chart-bar"></i>
-                            Отчеты
-                            <i class="fas fa-chevron-right chevron"></i>
-                        </a>
-                        <div class="collapse submenu" id="analyticsSubmenu">
-                            <ul class="nav flex-column">
-                                <li class="nav-item">
-                                    <a class="nav-link" href="reports.html">Сводный отчет по платежам</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="detailed_report.html">Детальный отчет по платежам</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="sales_report.html">Отчет продажи</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="session_report.html">Отчет по сеансам</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="ticket_registry.html">Отчет Реестр билетов</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="service_registry.html">Отчет Реестр видов услуг</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link collapsed" data-bs-toggle="collapse" href="#settingsSubmenu" role="button" aria-expanded="false" aria-controls="settingsSubmenu">
-                            <i class="fas fa-cog"></i>
-                            Настройки
-                            <i class="fas fa-chevron-right chevron"></i>
-                        </a>
-                        <div class="collapse submenu" id="settingsSubmenu">
-                            <ul class="nav flex-column">
-                                <li class="nav-item">
-                                    <a class="nav-link" href="terminal_settings.html">Настройки терминала для кассира</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="kiosk_settings.html">Настройки терминала для киоска</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Дополнительное меню -->
-            <div class="nav-section">
-                <h6 class="section-title">Дополнительно</h6>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link" href="support.html">
-                            <i class="fas fa-headset"></i>
-                            Поддержка
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="login.html">
-                            <i class="fas fa-sign-out-alt"></i>
-                            Выход
-                        </a>
-                    </li>
-                </ul>
-            </div>
+            <div class="notification-badge"></div>
         </div>
     </div>
+</header>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay"></div>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2 class="sidebar-title">KassaPay</h2>
+        <p class="sidebar-subtitle">Аппаратно-программный комплекс электронных билетов</p>
+    </div>
+
+    <div class="sidebar-content">
+        <!-- Основное меню -->
+        <div class="nav-section">
+            <h6 class="section-title">Основное</h6>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html">
+                        <i class="fas fa-home"></i>
+                        Принятые пожертвования
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="orders.html">
+                        <i class="fas fa-chart-line"></i>
+                        Заказы билетов
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Разделы с подменю -->
+        <div class="nav-section">
+            <h6 class="section-title">Разделы</h6>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link collapsed" data-bs-toggle="collapse" href="#projectsSubmenu" role="button"
+                        aria-expanded="false" aria-controls="projectsSubmenu">
+                        <i class="fas fa-folder"></i>
+                        Справочники
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </a>
+                    <div class="collapse submenu" id="projectsSubmenu">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="counterparties.html">Контрагенты</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="objects.html">Объекты</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="terminals.html">Терминалы</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="events.html">Мероприятия</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="sessions.html">Сеансы мероприятий</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="inventory.html">Инвентарь</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="services.html">Услуги</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link collapsed" data-bs-toggle="collapse" href="#analyticsSubmenu" role="button"
+                        aria-expanded="false" aria-controls="analyticsSubmenu">
+                        <i class="fas fa-chart-bar"></i>
+                        Отчеты
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </a>
+                    <div class="collapse submenu" id="analyticsSubmenu">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="reports-dashboard.html">Табло отчета по поступлениям</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="sales-dashboard.html">Табло отчета продаж</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="reports.html">Сводный отчет по платежам</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="detailed_report.html">Детальный отчет по платежам</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="sales_report.html">Отчет продажи</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="session_report.html">Отчет по сеансам</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="ticket_registry.html">Отчет Реестр билетов</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="service_registry.html">Отчет Реестр видов услуг</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link collapsed" data-bs-toggle="collapse" href="#settingsSubmenu" role="button"
+                        aria-expanded="false" aria-controls="settingsSubmenu">
+                        <i class="fas fa-cog"></i>
+                        Настройки
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </a>
+                    <div class="collapse submenu" id="settingsSubmenu">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="terminal_settings.html">Настройки терминала для кассира</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="kiosk_settings.html">Настройки терминала для киоска</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Дополнительное меню -->
+        <div class="nav-section">
+            <h6 class="section-title">Дополнительно</h6>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="support.html">
+                        <i class="fas fa-headset"></i>
+                        Поддержка
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="login.html">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Выход
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

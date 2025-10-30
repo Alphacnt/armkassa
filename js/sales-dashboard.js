@@ -1,8 +1,9 @@
-console.log('sales_report.js loaded at:', new Date().toISOString());
-
+console.log('sales-dashboard.js loaded at:', new Date().toISOString());
 // Мок-данные
 function generateMockSalesData(count) {
-    const events = ['Массовое катание', 'Детское катание', 'Ночное катание'];
+    const events = ['Взрослый билет (Гражданин РК)', 'Абонемент (Акимат)', 'Абонемент (Комиссия)', 'Дети школьного возраста', 'Пенсионеры', 'Студент', 'Экскурсия для детей',
+        'Экскурсия на английском языке', 'Экскурсия на казахском и русском языке', 'Сервис аудиогида', 'Иностранным гражданам стран СНГ', 'Иностранным гражданам иных государств'];
+    const objects = ['Мавзолей Ходжи Ахмеда Ясави', 'Мавзолей Айша-Биби', 'Мавзолей Карахан', 'Музей-заповедник Отырар', 'Мавзолей Арыстан Баб'];
     const startDate = new Date('2025-05-01');
     const endDate = new Date('2025-06-20');
     const data = [];
@@ -22,7 +23,8 @@ function generateMockSalesData(count) {
             muzaidynyCard: Math.floor(Math.random() * totalSales * 0.15),
             kaspi: Math.floor(Math.random() * totalSales * 0.2),
             returns,
-            event: events[Math.floor(Math.random() * events.length)]
+            event: events[Math.floor(Math.random() * events.length)],
+            object: objects[Math.floor(Math.random() * objects.length)]
         };
         data.push(sale);
     }
@@ -256,19 +258,39 @@ const RenderModule = {
         const tbody = document.getElementById('topDaysTable');
         if (!tbody) return;
         const topDays = DataModule.getTopDays(data);
-        tbody.innerHTML = topDays.length ? topDays.map(day => `
+        if (!topDays || topDays.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-2">Нет данных</td></tr>';
+            return;
+        }
+        // Защита: убедимся, что даты и суммы валидны, отсортируем по сумме
+        const sorted = topDays
+            .map(d => ({ date: d.date, sales: Number(d.sales) || 0, transactions: Number(d.transactions) || 0 }))
+            .sort((a, b) => b.sales - a.sales)
+            .slice(0, 5);
+        tbody.innerHTML = sorted.map(day => `
             <tr>
                 <td>${this.formatDate(day.date)}</td>
                 <td>${this.formatAmount(day.sales)}</td>
                 <td>${day.transactions}</td>
             </tr>
-        `).join('') : '<tr><td colspan="3">Нет данных</td></tr>';
+        `).join('');
     },
-    updateDashboardSubtitle(eventName, dateFrom, dateTo) {
-        const subtitle = document.getElementById('dashboardSubtitle');
-        if (!subtitle) return;
-        const dateRange = this.formatDateRange(dateFrom, dateTo);
-        subtitle.textContent = eventName ? `${eventName}${dateRange ? ', ' + dateRange : ''}` : `Сводная аналитика${dateRange ? ', ' + dateRange : ''}`;
+    updateDashboardSubtitle(eventName, objectName, dateFrom, dateTo) {
+        // if subtitle inputs exist — update them and the visible text
+        const subtitleTextEl = document.getElementById('subtitleText');
+        const dateFromEl = document.getElementById('dateFrom');
+        const dateToEl = document.getElementById('dateTo');
+
+        // подпись: если выбран объект — указываем его, иначе "Сводная аналитика" или событие
+        let title = 'Сводная аналитика';
+        if (objectName) title = objectName;
+        if (eventName) title = eventName;
+
+        if (subtitleTextEl) subtitleTextEl.textContent = title;
+
+        // установить значения полей даты (если переданы)
+        if (dateFromEl) dateFromEl.value = dateFrom || '';
+        if (dateToEl) dateToEl.value = dateTo || '';
     }
 };
 
@@ -283,6 +305,13 @@ const ChartModule = {
         const canvas = document.getElementById('salesTypesChart');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
+
+        // уничтожаем предыдущую инстанцию, если есть
+        if (this.charts.salesTypesChart) {
+            try { this.charts.salesTypesChart.destroy(); } catch (e) { /* ignore */ }
+            this.charts.salesTypesChart = null;
+        }
+
         const totals = DataModule.aggregateTotals(data).byType;
         const channels = {
             'Касса (QR/карта)': totals.qrCard,
@@ -292,13 +321,25 @@ const ChartModule = {
             'Muzaidyny.kz (Карта)': totals.muzaidynyCard,
             'Kaspi платежи': totals.kaspi
         };
+
+        const labels = Object.keys(channels);
+        const values = Object.values(channels).map(v => Number(v) || 0);
+        const totalSum = values.reduce((s, v) => s + v, 0);
+
+        // если все значения нулевые — показываем fallback "Нет данных"
+        const finalLabels = totalSum === 0 ? ['Нет данных'] : labels;
+        const finalValues = totalSum === 0 ? [1] : values;
+        const background = totalSum === 0
+            ? ['#cbd5e1'] // серый для "Нет данных"
+            : ['#ef4444', '#10b981', '#6366f1', '#f59e0b', '#8b5cf6', '#ec4899'];
+
         this.charts.salesTypesChart = new Chart(ctx, {
             type: 'pie',
             data: {
-                labels: Object.keys(channels),
+                labels: finalLabels,
                 datasets: [{
-                    data: Object.values(channels),
-                    backgroundColor: ['#ef4444', '#10b981', '#6366f1', '#f59e0b', '#8b5cf6', '#ec4899'],
+                    data: finalValues,
+                    backgroundColor: background,
                     borderWidth: 2,
                     borderColor: '#fff'
                 }]
@@ -349,21 +390,37 @@ const ChartModule = {
         const canvas = document.getElementById('salesByObjectChart');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
-        const totals = DataModule.aggregateTotals(data).byType;
-        const channels = {
-            'Мавзолей Ходжи Ахмеда Ясави': totals.qrCard,
-            'Мавзолей Айша-Биби': totals.cash,
-            'Мавзолей Карахан': totals.kiosk,
-            'Музей-заповедник Отырар': totals.muzaidynyKaspi,
-            'Мавзолей Арыстан Баб': totals.muzaidynyCard
-        };
-        this.charts.salesByChannelChart = new Chart(ctx, {
+
+        // агрегируем суммы по объектам из переданных данных
+        const byObject = {};
+        data.forEach(sale => {
+            const obj = sale.object || 'Неизвестно';
+            byObject[obj] = (byObject[obj] || 0) + (sale.saleAmount || 0);
+        });
+
+        // получить выбранный объект из дропдауна; если 'all' — показываем все объекты
+        const objectSelect = document.getElementById('objectSelect');
+        const selected = objectSelect ? objectSelect.value : 'all';
+
+        let labels = Object.keys(byObject);
+        let values = labels.map(l => byObject[l]);
+
+        if (selected && selected !== 'all') {
+            // показываем только выбранный объект (если данных нет — 0)
+            labels = [selected];
+            values = [byObject[selected] || 0];
+        }
+
+        // уничтожаем предыдущий график в этом слоте, если есть
+        this.charts.salesByObjectChart?.destroy();
+
+        this.charts.salesByObjectChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: Object.keys(channels),
+                labels,
                 datasets: [{
                     label: 'Продажи (₸)',
-                    data: Object.values(channels),
+                    data: values,
                     backgroundColor: '#6366f1',
                     borderColor: '#4f46e5',
                     borderWidth: 1
@@ -376,7 +433,8 @@ const ChartModule = {
                         beginAtZero: true,
                         ticks: { callback: value => RenderModule.formatAmount(value) }
                     }
-                }
+                },
+                plugins: { legend: { display: false } }
             }
         });
     },
@@ -471,29 +529,62 @@ const ChartModule = {
     },
     createSalesByEventChart(data) {
         const canvas = document.getElementById('salesByEventChart');
-        if (!canvas) return;
+        if (!canvas) {
+            console.warn('salesByEventChart canvas not found');
+            return;
+        }
         const ctx = canvas.getContext('2d');
-        const events = DataModule.aggregateByEvent(data);
+
+        // уничтожаем предыдущую инстанцию, если есть
+        if (this.charts.salesByEventChart) {
+            try { this.charts.salesByEventChart.destroy(); } catch (e) { /* ignore */ }
+            this.charts.salesByEventChart = null;
+        }
+
+        // агрегируем по видам услуг
+        const eventsObj = DataModule.aggregateByEvent(data || []);
+        let labels = Object.keys(eventsObj || {});
+        let values = labels.map(k => {
+            const v = eventsObj[k] && eventsObj[k].totalSales ? Number(eventsObj[k].totalSales) : 0;
+            return isNaN(v) ? 0 : v;
+        });
+
+        // общий суммарный показатель
+        const totalSum = values.reduce((s, v) => s + v, 0);
+
+        // безопасный fallback — если нет данных или сумма = 0, показываем "Нет данных" с ненулевым значением
+        if (labels.length === 0 || totalSum === 0) {
+            labels = ['Нет данных'];
+            values = [1];
+            var bg = ['#cbd5e1'];
+            var border = '#fff';
+        } else {
+            var bg = '#6366f1';
+            var border = '#4f46e5';
+        }
+
         this.charts.salesByEventChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: Object.keys(events),
+                labels,
                 datasets: [{
                     label: 'Сумма продаж (₸)',
-                    data: Object.values(events).map(evt => evt.totalSales),
-                    backgroundColor: '#6366f1',
-                    borderColor: '#4f46e5',
+                    data: values,
+                    backgroundColor: Array.isArray(bg) ? bg : labels.map(() => bg),
+                    borderColor: Array.isArray(border) ? border : labels.map(() => border),
                     borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: true,
                         ticks: { callback: value => RenderModule.formatAmount(value) }
                     }
-                }
+                },
+                plugins: { legend: { display: false } }
             }
         });
     }
@@ -503,6 +594,7 @@ const ChartModule = {
 const AppModule = {
     isInitialized: false,
     currentEvent: null,
+    currentObject: null,
     async initialize() {
         if (this.isInitialized) {
             console.log('Sales report page already initialized');
@@ -510,24 +602,40 @@ const AppModule = {
         }
         this.isInitialized = true;
         console.log('Initializing sales report page');
+        // сначала загрузим данные
         await DataModule.fetchSalesData();
+        // убедимся, что фильтр по умолчанию применён ко всем данным
+        DataModule.filterData({ dateFrom: '', dateTo: '' });
         this.bindEvents();
         this.setDefaultFilters();
+        // показать дашборд и таблицу уже с загруженными данными (все объекты по умолчанию)
+        window.salesReportShowDashboard(null);
         this.updateTable();
     },
     bindEvents() {
         document.getElementById('newReportBtn')?.addEventListener('click', this.handleFilter);
         document.getElementById('exportExcelBtn')?.addEventListener('click', this.handleExport);
         document.getElementById('showAllAnalyticsBtn')?.addEventListener('click', this.handleShowAllAnalytics);
-        document.getElementById('backToMainBtn')?.addEventListener('click', window.salesReportBackToMain);
-        document.getElementById('dateFrom')?.addEventListener('change', this.handleFilter);
-        document.getElementById('dateTo')?.addEventListener('change', this.handleFilter);
+        document.getElementById('objectSelect')?.addEventListener('change', () => this.handleObjectChange());
+        // слушатели для выбора периода в subtitle
+        document.getElementById('dateFrom')?.addEventListener('change', () => this.handleFilter());
+        document.getElementById('dateTo')?.addEventListener('change', () => this.handleFilter());
+        document.getElementById('applyPeriodBtn')?.addEventListener('click', () => this.handleFilter());
         const pageSizeSelect = document.getElementById('pageSizeSelect');
         if (pageSizeSelect) {
             pageSizeSelect.addEventListener('change', () => this.handleRowsPerPage());
         } else {
             console.warn('pageSizeSelect not found, cannot bind event');
         }
+    },
+    handleObjectChange() {
+        const sel = document.getElementById('objectSelect');
+        if (!sel) return;
+        const val = sel.value === 'all' ? null : sel.value;
+        this.currentObject = val;
+        console.log('Selected object:', val || 'all');
+        // show dashboard for selected object (overrides event filter)
+        window.salesReportShowDashboard();
     },
     setDefaultFilters() {
         const dateFrom = document.getElementById('dateFrom');
@@ -602,12 +710,19 @@ const AppModule = {
 
 // Глобальные функции
 window.salesReportShowDashboard = function (eventName, rowDate, analyticsDateTo) {
-    console.log('Showing dashboard for:', { eventName: eventName || 'all events', rowDate, analyticsDateTo });
+    const selectedObject = AppModule.currentObject;
+    console.log('Showing dashboard for:', { eventName: eventName || 'all events', selectedObject, rowDate, analyticsDateTo });
     AppModule.currentEvent = eventName;
-    const isSingleEvent = !!eventName;
-    const data = isSingleEvent ?
-        DataModule.filteredData.filter(s => s.event === eventName) :
-        DataModule.filteredData;
+    const isSingleEvent = !!eventName && !selectedObject;
+    // if object is selected, show data for that object, otherwise if eventName passed use event filter, else show all filtered data
+    let data;
+    if (selectedObject) {
+        data = DataModule.filteredData.filter(s => s.object === selectedObject);
+    } else if (isSingleEvent) {
+        data = DataModule.filteredData.filter(s => s.event === eventName);
+    } else {
+        data = DataModule.filteredData;
+    }
 
     const mainPage = document.getElementById('mainPage');
     const dashboardPage = document.getElementById('dashboardPage');
@@ -617,7 +732,7 @@ window.salesReportShowDashboard = function (eventName, rowDate, analyticsDateTo)
     if (mainPage) mainPage.style.display = 'none';
     if (dashboardPage) dashboardPage.style.display = 'block';
     if (generalAnalytics) generalAnalytics.style.display = isSingleEvent ? 'none' : 'block';
-    if (returnsByChannelContainer) returnsByChannelContainer.style.display = isSingleEvent ? 'block' : 'none';
+    if (returnsByChannelContainer) returnsByChannelContainer.style.display = (selectedObject || isSingleEvent) ? 'block' : 'none';
 
     let dateFrom = '', dateTo = '';
     if (isSingleEvent) {
@@ -636,7 +751,7 @@ window.salesReportShowDashboard = function (eventName, rowDate, analyticsDateTo)
         console.log('Dashboard dates:', { dateFrom, dateTo });
     }
 
-    RenderModule.updateDashboardSubtitle(eventName, dateFrom, dateTo);
+    RenderModule.updateDashboardSubtitle(eventName, selectedObject, dateFrom, dateTo);
     RenderModule.updateStatsCards(data, isSingleEvent);
     ChartModule.destroyCharts();
     ChartModule.createSalesTypesChart(data);
@@ -646,16 +761,23 @@ window.salesReportShowDashboard = function (eventName, rowDate, analyticsDateTo)
     ChartModule.createSalesByHourChart(data);
     RenderModule.renderTopDays(data);
 
-    if (isSingleEvent) {
+    // показываем разбивку возвратов для выбранного объекта или для одиночного события
+    if (selectedObject || isSingleEvent) {
         ChartModule.createReturnsByChannelChart(data);
+        // также отображаем "Продажи по видам услуг" внутри выбранного объекта (если есть несколько событий)
+        ChartModule.createSalesByEventChart(data);
     } else {
+        // если показаны все объекты — отображаем сводную диаграмму по видам услуг
         ChartModule.createSalesByEventChart(data);
     }
 };
 
+// ...existing code...
+
 window.salesReportBackToMain = function () {
     console.log('Returning to main page');
     AppModule.currentEvent = null;
+    AppModule.currentObject = null;
     const mainPage = document.getElementById('mainPage');
     const dashboardPage = document.getElementById('dashboardPage');
     const generalAnalytics = document.getElementById('generalAnalytics');
@@ -665,6 +787,8 @@ window.salesReportBackToMain = function () {
     if (mainPage) mainPage.style.display = 'block';
     if (generalAnalytics) generalAnalytics.style.display = 'none';
     if (returnsByChannelContainer) returnsByChannelContainer.style.display = 'none';
+    const sel = document.getElementById('objectSelect');
+    if (sel) sel.value = 'all';
     ChartModule.destroyCharts();
 };
 

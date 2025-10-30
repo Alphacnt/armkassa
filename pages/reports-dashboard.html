@@ -15,96 +15,33 @@
 <body>
     <main>
         <div class="container-fluid p-4">
-            <!-- Основная страница с отчетами -->
-            <div id="mainPage">
-                <div class="main-container">
-                    <div class="page-header">
-                        <h1><i class="bi bi-credit-card me-2"></i>Сводный отчет по полученным платежам</h1>
-                    </div>
-                    <div class="filters-section mt-3">
-                        <div class="row g-3 align-items-end">
-                            <div class="col-md-3">
-                                <label class="form-label">Дата с</label>
-                                <input type="date" class="form-control" id="dateFrom">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Дата по</label>
-                                <input type="date" class="form-control" id="dateTo">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label"> </label>
-                                <button class="btn btn-primary w-100" id="newReportBtn">
-                                    <i class="bi bi-plus-circle me-2"></i>Сформировать отчет
-                                </button>
-                            </div>
-                            <!-- <div class="col-md-2">
-                                <label class="form-label"> </label>
-                                <button class="btn btn-primary w-100" id="showAllAnalyticsBtn">
-                                    <i class="bi bi-bar-chart me-2"></i>Общая аналитика
-                                </button>
-                            </div> -->
-                            <div class="col-md-2">
-                                <label class="form-label"> </label>
-                                <button class="btn btn-success w-100" id="exportExcelBtn">
-                                    <i class="bi bi-file-earmark-excel me-2"></i>Экспорт в Excel
-                                </button>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Поиск</label>
-                                <input type="text" class="form-control" id="searchInput"
-                                    placeholder="Поиск по всем колонкам...">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="table-container">
-                        <div class="d-flex justify-content-end mb-2">
-                            <select id="pageSizeSelect" class="form-select w-auto">
-                                <option value="5">5 записей</option>
-                                <option value="10">10 записей</option>
-                                <option value="20">20 записей</option>
-                                <option value="50" selected>50 записей</option>
-                                <option value="100">100 записей</option>
-                            </select>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th rowspan="2">№</th>
-                                        <th rowspan="2">Объект</th>
-                                        <th rowspan="2">Дата</th>
-                                        <th rowspan="2">Сумма поступлений</th>
-                                        <th colspan="3" class="text-left">В том числе:</th>
-                                        <th rowspan="2">Транзакций</th>
-                                        <th rowspan="2">Статус</th>
-                                    </tr>
-                                    <tr class="sub-columns">
-                                        <th>Купюры</th>
-                                        <th>Монеты</th>
-                                        <th>Kaspi-QR</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="reportsTable"></tbody>
-                            </table>
-                        </div>
-                        <div id="paginationContainer" class="paginationControls mt-3"></div>
-                    </div>
-                </div>
-                <div class="toast-container position-fixed top-0 end-0 p-3"></div>
-            </div>
-
             <!-- Дашборд сводного отчета -->
             <div id="dashboardPage" class="dashboard-container" style="display: none;">
                 <div class="dashboard-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h1><i class="bi bi-graph-up me-2"></i>Аналитика поступлений</h1>
-                            <p class="mb-0 opacity-75" id="dashboardSubtitle"></p>
+                            <div id="dashboardSubtitle" class="d-flex align-items-center gap-2">
+                                <div id="subtitleText" class="me-3" style="width: 100%;">Сводная аналитика</div>
+                            </div>
                         </div>
                         <div>
-                            <button class="btn btn-light" onclick="window.reportsBackToMain()">
-                                <i class="bi bi-arrow-left me-2"></i>Назад
-                            </button>
+                            <div class="d-flex align-items-center gap-2">
+                                <label for="dateFrom" class="me-1 mb-0 opacity-75">Период:</label>
+                                <input type="date" id="dateFrom" class="form-control form-control-sm me-1" />
+                                <span class="me-1">—</span>
+                                <input type="date" id="dateTo" class="form-control form-control-sm me-2" />
+                                <!-- <button id="applyPeriodBtn" class="btn btn-sm btn-primary">Применить</button> -->
+                                <label for="objectSelect" class="me-2 mb-0 opacity-75">Объект:</label>
+                                <select id="objectSelect" class="form-select form-select-sm w-auto">
+                                    <option value="all" selected>Все объекты</option>
+                                    <option value="Мавзолей Ходжи Ахмеда Ясави">Мавзолей Ходжи Ахмеда Ясави</option>
+                                    <option value="Мавзолей Айша-Биби">Мавзолей Айша-Биби</option>
+                                    <option value="Мавзолей Карахан">Мавзолей Карахан</option>
+                                    <option value="Музей-заповедник Отырар">Музей-заповедник Отырар</option>
+                                    <option value="Мавзолей Арыстан Баб">Мавзолей Арыстан Баб</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -132,7 +69,7 @@
                     <div class="col-md-3">
                         <div class="stats-card">
                             <h3 id="topObject">–</h3>
-                            <p id="topObjectLabel">Лучший объект</p>
+                            <p id="topObjectLabel">Средний чек</p>
                         </div>
                     </div>
                 </div>
@@ -141,7 +78,7 @@
                 <div class="row mb-4">
                     <div class="col-lg-6">
                         <div class="chart-container">
-                            <h5><i class="bi bi-pie-chart me-2"></i>Структура платежей по типам</h5>
+                            <h5><i class="bi bi-pie-chart me-2"></i>Структура поступлений по типам</h5>
                             <canvas id="paymentTypesChart"></canvas>
                         </div>
                     </div>
@@ -156,7 +93,7 @@
                 <div class="row mb-4">
                     <div class="col-lg-6">
                         <div class="chart-container">
-                            <h5><i class="bi bi-graph-up me-2"></i>Динамика платежей по дням</h5>
+                            <h5><i class="bi bi-graph-up me-2"></i>Динамика поступлений по дням</h5>
                             <canvas id="dailyRevenueChart"></canvas>
                         </div>
                     </div>
@@ -171,13 +108,13 @@
                 <div class="row mb-4">
                     <div class="col-lg-6">
                         <div class="chart-container">
-                            <h5><i class="bi bi-clock me-2"></i>Активность платежей по часам</h5>
+                            <h5><i class="bi bi-clock me-2"></i>Активность поступлений по часам</h5>
                             <canvas id="hourlyActivityChart"></canvas>
                         </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="chart-container">
-                            <h5><i class="bi bi-pc-display me-2"></i>Топ-5 терминалов по активности</h5>
+                            <h5><i class="bi bi-pc-display me-2"></i>Динамика поступлений по Sadaka Pay</h5>
                             <canvas id="topTerminalsChart"></canvas>
                         </div>
                     </div>
@@ -215,7 +152,7 @@
     <script src="../js/chart.min.js"></script>
     <script src="../js/dashboard.js"></script>
     <script src="../js/sidebar-loader.js"></script>
-    <script src="../js/reports.js"></script>
+    <script src="../js/reports-dashboard.js"></script>
 </body>
 
 </html>

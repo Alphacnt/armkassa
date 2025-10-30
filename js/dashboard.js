@@ -11,9 +11,9 @@ function generateMockPaymentsData(count) {
         "Мавзолей Ходжи Ахмеда Ясави", "Мавзолей Айна-Биби", "Мавзолей Айша-Биби",
         "Мечеть Нур-Астана", "Музей Первого Президента", "Мавзолей Карахан",
         "Мечеть Хазрет Султан", "Музей Истории", "Мавзолей Бабаджи-Хатун",
-        "Мечеть Аль-Акса"
+        "Мечеть Аль-Акса", "Музей-заповедник Отырар", "Мавзолей Арыстан Баб",
     ];
-    const terminals = Array.from({length: 20}, (_, i) => `T${String(i+1).padStart(3, '0')}`);
+    const terminals = Array.from({ length: 20 }, (_, i) => `T${String(i + 1).padStart(3, '0')}`);
     const paymentTypes = ["Kaspi.kz", "Купюрами", "Монеты"];
     const statuses = ["Действует", "Отменён", "Ошибка"];
     const startDate = new Date('2025-05-19');
@@ -40,15 +40,15 @@ function generateMockPaymentsData(count) {
             type: paymentTypes[Math.floor(Math.random() * paymentTypes.length)],
             amount: amount,
             refund: refund,
-            processId: `P${String(i+1).padStart(3, '0')}`,
-            transactionId: `TX${String(i+1).padStart(3, '0')}`,
+            processId: `P${String(i + 1).padStart(3, '0')}`,
+            transactionId: `TX${String(i + 1).padStart(3, '0')}`,
             status: status
         });
     }
     return data;
 }
 
-window.initializePaymentsPage = function() {
+window.initializePaymentsPage = function () {
     console.log('Инициализация страницы платежей:', new Date().toISOString());
     PaymentsApp.filteredData = [...PaymentsApp.paymentsData];
     setDefaultDates();
@@ -76,7 +76,7 @@ window.initializePaymentsPage = function() {
     }
 };
 
-PaymentsApp.debounceFilterData = function() {
+PaymentsApp.debounceFilterData = function () {
     clearTimeout(PaymentsApp.debounceTimeout);
     PaymentsApp.debounceTimeout = setTimeout(filterData, 300);
 };
@@ -106,8 +106,8 @@ function loadPaymentsTable(data, page) {
 
     pageData.forEach(payment => {
         const row = document.createElement('tr');
-        const typeClass = payment.type === 'Kaspi.kz' ? 'bg-danger' : 
-                          payment.type === 'Купюрами' ? 'bg-success' : 'bg-primary';
+        const typeClass = payment.type === 'Kaspi.kz' ? 'bg-danger' :
+            payment.type === 'Купюрами' ? 'bg-success' : 'bg-primary';
         row.innerHTML = `
             <td>${payment.id}</td>
             <td><a href="#" class="object-link" data-object="${encodeURIComponent(payment.object)}" data-date="${payment.date}">${payment.object}</a></td>
@@ -535,7 +535,7 @@ function createDailyPaymentsChart(data) {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        callback: function(value) { return new Intl.NumberFormat('ru-RU').format(value) + ' ₸'; }
+                        callback: function (value) { return new Intl.NumberFormat('ru-RU').format(value) + ' ₸'; }
                     }
                 },
                 x: {
@@ -589,7 +589,7 @@ function createStatusChart(data) {
             datasets: [{
                 label: "Количество",
                 data: Object.keys(statusCounts).length ? Object.values(statusCounts) : [1],
-                backgroundColor: Object.keys(statusCounts).length ? Object.keys(statusCounts).map(status => 
+                backgroundColor: Object.keys(statusCounts).length ? Object.keys(statusCounts).map(status =>
                     status === "Действует" ? "#28a745" : status === "Отменён" ? "#dc3545" : "#ffc107"
                 ) : ["#d1d5db"],
                 borderRadius: 8,
@@ -825,7 +825,7 @@ function createTerminalChart(data) {
                     position: "left",
                     beginAtZero: true,
                     ticks: {
-                        callback: function(value) { return new Intl.NumberFormat('ru-RU').format(value) + ' ₸'; }
+                        callback: function (value) { return new Intl.NumberFormat('ru-RU').format(value) + ' ₸'; }
                     }
                 },
                 y1: {
@@ -867,7 +867,7 @@ function createHeatmapChart(data) {
     }
 
     const heatmapData = [];
-    const hours = Array.from({length: 24}, (_, i) => i);
+    const hours = Array.from({ length: 24 }, (_, i) => i);
     const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
     const dataGrid = {};
     days.forEach(day => hours.forEach(hour => dataGrid[`${day}-${hour}`] = 0));
@@ -892,13 +892,13 @@ function createHeatmapChart(data) {
             datasets: [{
                 label: 'Активность платежей',
                 data: heatmapData.length ? heatmapData : [{ x: 0, y: 0, v: 0 }],
-                backgroundColor: function(context) {
+                backgroundColor: function (context) {
                     const value = context.raw.v;
                     const maxValue = Math.max(...heatmapData.map(d => d.v), 1);
                     const alpha = Math.min(value / maxValue, 1);
                     return `rgba(102, 126, 234, ${alpha})`;
                 },
-                pointRadius: function(context) {
+                pointRadius: function (context) {
                     const value = context.raw.v;
                     const maxValue = Math.max(...heatmapData.map(d => d.v), 1);
                     return Math.max(3, Math.min((value / maxValue) * 15, 15));
@@ -921,7 +921,7 @@ function createHeatmapChart(data) {
                     min: -0.5,
                     max: 6.5,
                     ticks: {
-                        callback: function(value) {
+                        callback: function (value) {
                             const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
                             return days[Math.round(value)] || '';
                         }
