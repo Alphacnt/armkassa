@@ -652,7 +652,7 @@ const ChartModule = {
                 datasets: [
                     { label: 'Активированные', data: activated, backgroundColor: '#6366f1' },
                     { label: 'Не активированные', data: notActivated, backgroundColor: '#f59e0b' },
-                    { label: 'Не проданные', data: unsold, backgroundColor: '#ef4444' }
+                    // { label: 'Не проданные', data: unsold, backgroundColor: '#ef4444' }
                 ]
             },
             options: {
