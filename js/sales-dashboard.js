@@ -603,9 +603,9 @@ const ChartModule = {
         }
 
         const totals = TicketModule.getTotals();
-        const data = [totals.activated, totals.notActivated, totals.unsold];
-        const labels = ['Активированные', 'Не активированные', 'Не проданные'];
-        const colors = ['#6366f1', '#f59e0b', '#ef4444'];
+        const data = [totals.activated, totals.notActivated];
+        const labels = ['Активированные', 'Не активированные'];
+        const colors = ['#6366f1', '#f59e0b'];
 
         this.charts.ticketsOverviewChart = new Chart(ctx, {
             type: 'pie',
