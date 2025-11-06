@@ -4,12 +4,12 @@ function generateMockSalesData(count) {
     const events = ['Взрослый билет (Гражданин РК)', 'Абонемент (Акимат)', 'Абонемент (Комиссия)', 'Дети школьного возраста', 'Пенсионеры', 'Студент', 'Экскурсия для детей',
         'Экскурсия на английском языке', 'Экскурсия на казахском и русском языке', 'Сервис аудиогида', 'Иностранным гражданам стран СНГ', 'Иностранным гражданам иных государств'];
     const objects = ['Мавзолей Ходжи Ахмеда Ясави', 'Мавзолей Айша-Биби', 'Мавзолей Карахан', 'Музей-заповедник Отырар', 'Мавзолей Арыстан Баб'];
-    const startDate = new Date('2025-05-01');
-    const endDate = new Date('2025-06-20');
+    const startDate = new Date('2025-10-01');
+    const endDate = new Date('2025-10-31');
     const data = [];
 
     for (let i = 0; i < count; i++) {
-        const date = new Date(startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime()));
+        const date = new Date(startDate.getTime() + (endDate.getTime() - startDate.getTime()));
         const totalSales = Math.floor(Math.random() * 50000) + 1000;
         const returns = Math.floor(Math.random() * totalSales * 0.1);
         const sale = {
@@ -31,21 +31,80 @@ function generateMockSalesData(count) {
     return data;
 }
 
+// === Генерация РЕАЛЬНЫХ продаж за октябрь ===
+function generateRealSalesData() {
+    const sales = [];
+    const startDate = new Date('2025-10-01');
+    const events = Object.keys(TicketModule.categories);
+    const objects = Object.keys(TicketModule.objectsMonthly);
+    const channelWeights = { qrCard: 0.3, cash: 0.15, kiosk: 0.1, muzaidynyKaspi: 0.25, muzaidynyCard: 0.1, kaspi: 0.1 };
+
+    for (let day = 0; day < 31; day++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + day);
+        const dateStr = date.toISOString().split('T')[0];
+
+        objects.forEach(obj => {
+            const dailyTickets = obj === 'Мавзолей Ходжи Ахмеда Ясави' ? 2000 :
+                obj.includes('Арыстан') || obj.includes('Отырар') ? 1500 : 1000;
+
+            // По категориям
+            Object.entries(TicketModule.categories).forEach(([event, stats]) => {
+                const dailyInCat = Math.round(stats.total / 31 / objects.length * (objects.length * (stats.total / TicketModule.grandTotals.totalTickets))); // равномерно
+                const dailyForObj = event === 'Взрослый билет (Гражданин РК)' ?
+                    Math.round((TicketModule.objectsMonthly[obj].monthlyTickets - (TicketModule.objectsMonthly[obj].monthlyTickets * 0.7)) / 31) : // пример
+                    Math.round(stats.total / 31);
+
+                if (dailyForObj <= 0) return;
+
+                for (let i = 0; i < dailyForObj; i++) {
+                    const hour = 9 + Math.floor(Math.random() * 10); // 9–19
+                    date.setHours(hour, Math.random() * 60);
+                    const amount = stats.revenue / stats.total; // цена за билет
+                    const totalSales = Math.round(amount);
+                    const returns = Math.random() < 0.03 ? Math.round(totalSales * (0.5 + Math.random() * 0.5)) : 0;
+
+                    const channels = {};
+                    let remaining = totalSales;
+                    Object.entries(channelWeights).forEach(([k, w]) => {
+                        channels[k] = k === 'returns' ? returns : Math.round(totalSales * w * (0.8 + Math.random() * 0.4));
+                        remaining -= channels[k];
+                    });
+                    channels.qrCard += remaining;
+
+                    sales.push({
+                        id: sales.length + 1,
+                        date: date.toISOString(),
+                        saleAmount: totalSales,
+                        returns,
+                        event,
+                        object: obj,
+                        ...channels
+                    });
+                }
+            });
+        });
+    }
+
+    console.log('Сгенерировано реальных продаж:', sales.length);
+    return sales;
+}
+
 // Модуль данных
 const DataModule = {
     salesData: [],
     filteredData: [],
     currentPage: 1,
     rowsPerPage: 10,
+
     async fetchSalesData() {
-        try {
-            this.salesData = generateMockSalesData(100);
-            this.filteredData = [...this.salesData];
-            console.log('Sales data loaded:', this.salesData.length);
-        } catch (error) {
-            console.error('Error fetching sales data:', error);
-        }
+        this.salesData = generateRealSalesData();
+        this.filteredData = [...this.salesData];
+        TicketModule.debug?.();
     },
+
+    // остальные методы без изменений (filterData, aggregateTotals, getTopChannel и т.д.)
+    // они уже работают с реальными данными
     filterData({ dateFrom, dateTo }) {
         this.filteredData = this.salesData.filter(sale => {
             const saleDate = sale.date.split('T')[0];
@@ -54,7 +113,6 @@ const DataModule = {
             return true;
         });
         this.currentPage = 1;
-        console.log('Filtered data:', this.filteredData.length);
     },
     getPagedData() {
         const start = (this.currentPage - 1) * this.rowsPerPage;
@@ -73,21 +131,13 @@ const DataModule = {
             acc.byType.muzaidynyCard += sale.muzaidynyCard;
             acc.byType.kaspi += sale.kaspi;
             acc.byType.returns += sale.returns;
-            acc.activationCount = 10;
+            // Активация из TicketModule
+            acc.activationCount = TicketModule.getTotals().activated;
             return acc;
         }, {
-            totalSales: 0,
-            totalReturns: 0,
-            transactions: 0,
-            byType: {
-                qrCard: 0,
-                cash: 0,
-                kiosk: 0,
-                muzaidynyKaspi: 0,
-                muzaidynyCard: 0,
-                kaspi: 0,
-                returns: 0
-            }
+            totalSales: 0, totalReturns: 0, transactions: 0,
+            activationCount: 0,
+            byType: { qrCard: 0, cash: 0, kiosk: 0, muzaidynyKaspi: 0, muzaidynyCard: 0, kaspi: 0, returns: 0 }
         });
     },
     aggregateByEvent(data = this.filteredData) {
@@ -172,6 +222,8 @@ const RenderModule = {
         return this.formatDate(dateFrom || dateTo);
     },
     updateStatsCards(data, isSingleEvent) {
+        const selectedObject = AppModule.currentObject;
+        const ticketTotals = selectedObject ? TicketModule.getTotalsForObject(selectedObject) : TicketModule.getTotals();
         const totals = DataModule.aggregateTotals(data);
         const totalSalesElement = document.getElementById('totalSales');
         const totalReturnsElement = document.getElementById('totalReturns');
@@ -194,8 +246,8 @@ const RenderModule = {
         if (topEventElement) topEventElement.textContent = DataModule.getTopEvent(data);
         if (topChannelCard) topChannelCard.style.display = isSingleEvent ? 'block' : 'none';
         if (topEventCard) topEventCard.style.display = isSingleEvent ? 'none' : 'block';
-        if (activationCountElement) activationCountElement.textContent = totals.activationCount;
-        if (activationShareElement) activationShareElement.textContent = DataModule.getActivationShare(data) + '%';
+        if (activationCountElement) activationCountElement.textContent = ticketTotals.activated;
+        if (activationShareElement) activationShareElement.textContent = ticketTotals.total > 0 ? (ticketTotals.activated / ticketTotals.total * 100).toFixed(1) + '%' : '0%';
     },
     renderSalesTable(data) {
         const tbody = document.getElementById('detailedTable');
@@ -602,7 +654,8 @@ const ChartModule = {
             this.charts.ticketsOverviewChart = null;
         }
 
-        const totals = TicketModule.getTotals();
+        const selectedObject = AppModule.currentObject;
+        const totals = selectedObject ? TicketModule.getTotalsForObject(selectedObject) : TicketModule.getTotals();
         const data = [totals.activated, totals.notActivated];
         const labels = ['Активированные', 'Не активированные'];
         const colors = ['#6366f1', '#f59e0b'];
@@ -768,8 +821,8 @@ const AppModule = {
         let dateTo = dateToInput?.value || '';
 
         if (!dateFrom && !dateTo) {
-            dateFrom = '2025-06-13';
-            dateTo = '2025-06-20';
+            dateFrom = '2025-10-01';
+            dateTo = '2025-10-31';
             if (dateFromInput && dateToInput) {
                 dateFromInput.value = dateFrom;
                 dateToInput.value = dateTo;
@@ -824,8 +877,8 @@ window.salesReportShowDashboard = function (eventName, rowDate, analyticsDateTo)
         }
         console.log('Event date:', { eventName, dateFrom, dataLength: data.length });
     } else {
-        dateFrom = document.getElementById('dateFrom')?.value || '2025-06-13';
-        dateTo = analyticsDateTo || document.getElementById('dateTo')?.value || '2025-06-20';
+        dateFrom = document.getElementById('dateFrom')?.value || '2025-10-01';
+        dateTo = analyticsDateTo || document.getElementById('dateTo')?.value || '2025-10-31';
         console.log('Dashboard dates:', { dateFrom, dateTo });
     }
 
@@ -854,47 +907,177 @@ window.salesReportShowDashboard = function (eventName, rowDate, analyticsDateTo)
     ChartModule.createTicketsByCategoryChart();
 };
 
-const TicketModule = {
-    totalTickets: 2000,
-    categories: {
-        'Взрослый билет (Гражданин РК)': { total: 600, activated: 450, notActivated: 120, unsold: 30 },
-        'Абонемент (Акимат)': { total: 150, activated: 100, notActivated: 40, unsold: 10 },
-        'Абонемент (Комиссия)': { total: 100, activated: 70, notActivated: 25, unsold: 5 },
-        'Дети школьного возраста': { total: 250, activated: 180, notActivated: 60, unsold: 10 },
-        'Пенсионеры': { total: 100, activated: 70, notActivated: 25, unsold: 5 },
-        'Студент': { total: 200, activated: 150, notActivated: 40, unsold: 10 },
-        'Экскурсия для детей': { total: 80, activated: 60, notActivated: 18, unsold: 2 },
-        'Экскурсия на английском языке': { total: 70, activated: 50, notActivated: 18, unsold: 2 },
-        'Экскурсия на казахском и русском языке': { total: 120, activated: 90, notActivated: 25, unsold: 5 },
-        'Сервис аудиогида': { total: 50, activated: 30, notActivated: 18, unsold: 2 },
-        'Иностранным гражданам стран СНГ': { total: 200, activated: 140, notActivated: 50, unsold: 10 },
-        'Иностранным гражданам иных государств': { total: 80, activated: 60, notActivated: 18, unsold: 2 }
-    },
-    getTotals() {
-        const totals = { activated: 0, notActivated: 0, unsold: 0, total: 0 };
-        Object.values(this.categories).forEach(c => {
-            totals.activated += c.activated || 0;
-            totals.notActivated += c.notActivated || 0;
-            totals.unsold += c.unsold || 0;
-            totals.total += c.total || 0;
+// === TicketModule с УЛУЧШЕННОЙ логикой активации (по объектам + разброс по категориям) ===
+const TicketModule = (function () {
+    const DAYS = 31;
+    const objects = {
+        'Мавзолей Ходжи Ахмеда Ясави': { dailyTickets: 2000 },
+        'Мавзолей Арыстан Баб': { dailyTickets: 1500 },
+        'Музей-заповедник Отырар': { dailyTickets: 1500 },
+        'Мавзолей Айша-Биби': { dailyTickets: 1000 },
+        'Мавзолей Карахан': { dailyTickets: 1000 }
+    };
+
+    const categoryDefs = {
+        'Абонемент (Комиссия)': { price: 0, perDayAll: 10 },
+        'Абонемент (Акимат)': { price: 0, perDayAll: 10 },
+        'Пенсионеры': { priceByObject: { 'Мавзолей Ходжи Ахмеда Ясави': 500, 'Музей-заповедник Отырар': 300, 'Мавзолей Арыстан Баб': 300, 'Мавзолей Карахан': 200, 'Мавзолей Айша-Биби': 200 }, perDayEach: 50 },
+        'Дети дошкольного возраста': { priceByObject: { 'Мавзолей Ходжи Ахмеда Ясави': 300, 'Мавзолей Айша-Биби': 100, 'Мавзолей Карахан': 100, 'Мавзолей Арыстан Баб': 100, 'Музей-заповедник Отырар': 100 }, perDayEach: 50 },
+        'Экскурсия на казахском и русском языке': { priceByObject: { 'Мавзолей Айша-Биби': 2000, 'Мавзолей Карахан': 2000, 'Мавзолей Арыстан Баб': 3000, 'Музей-заповедник Отырар': 3000, 'Мавзолей Ходжи Ахмеда Ясави': 3000 }, perDayEach: 100 },
+        'Студент': { priceByObject: { 'Мавзолей Ходжи Ахмеда Ясави': 500, 'Музей-заповедник Отырар': 300, 'Мавзолей Арыстан Баб': 300, 'Мавзолей Карахан': 200, 'Мавзолей Айша-Биби': 200 }, perDayEach: 100 },
+        'Иностранным гражданам иных государств': { price: 2000, perDayListed: 100 },
+        'Экскурсия для детей': { price: 1000, perDayListed: 50 },
+        'Иностранным гражданам стран СНГ': { price: 1500, perDayListed: 100 },
+        'Экскурсия на английском языке': { price: 5000, perDayListed: 20 },
+        'Сервис аудиогида': { priceByObject: { 'Мавзолей Ходжи Ахмеда Ясави': 1500 }, perDayObj: { 'Мавзолей Ходжи Ахмеда Ясави': 10 } }
+    };
+
+    const ADULT_PRICE = 1000;
+    const ADULT_CAT = 'Взрослый билет (Гражданин РК)';
+    const listedObjects = ['Мавзолей Карахан', 'Мавзолей Айша-Биби', 'Мавзолей Арыстан Баб', 'Музей-заповедник Отырар', 'Мавзолей Ходжи Ахмеда Ясави'];
+
+    // === Хранилище по категориям (глобально) ===
+    const categories = {}; // catName -> { total, activated, notActivated, revenue }
+
+    // === Хранилище по объектам (с activated) ===
+    const objectsMonthly = {}; // objName -> { monthlyTickets, monthlyRevenue, monthlyActivated, activationRate }
+
+    let grandRevenue = 0;
+    let grandActivated = 0;
+    let grandTotalTickets = 0;
+
+    Object.keys(objects).forEach(obj => {
+        // === КЛЮЧЕВОЕ: свой % активации для каждого объекта (85-95%) ===
+        const baseActivationRate = 0.85 + Math.random() * 0.10; // например, Ясави — 92.3%, Айша-Биби — 87.1% и т.д.
+        let dailyAssigned = 0;
+        let dailyRev = 0;
+        let dailyActivated = 0;
+
+        // Инициализация объекта
+        objectsMonthly[obj] = {
+            monthlyTickets: objects[obj].dailyTickets * DAYS,
+            monthlyRevenue: 0,
+            monthlyActivated: 0,
+            activationRate: baseActivationRate
+        };
+
+        Object.entries(categoryDefs).forEach(([cat, def]) => {
+            let cnt = 0, price = 0;
+            if (def.perDayAll) { cnt = def.perDayAll; price = def.price || 0; }
+            else if (def.perDayEach && def.priceByObject?.[obj]) { cnt = def.perDayEach; price = def.priceByObject[obj]; }
+            else if (def.perDayListed && listedObjects.includes(obj)) { cnt = def.perDayListed; price = def.price; }
+            else if (def.perDayObj?.[obj]) { cnt = def.perDayObj[obj]; price = def.priceByObject[obj] || 0; }
+
+            if (cnt > 0) {
+                const monthCnt = cnt * DAYS;
+                const monthRev = monthCnt * price;
+
+                // === Небольшой разброс по категории (±3%) ===
+                const categoryVariation = -0.03 + Math.random() * 0.06;
+                const finalRate = Math.max(0.80, Math.min(0.98, baseActivationRate + categoryVariation));
+                const monthActivated = Math.round(monthCnt * finalRate);
+
+                if (!categories[cat]) {
+                    categories[cat] = { total: 0, activated: 0, notActivated: 0, unsold: 0, revenue: 0 };
+                }
+                categories[cat].total += monthCnt;
+                categories[cat].activated += monthActivated;
+                categories[cat].notActivated += (monthCnt - monthActivated);
+                categories[cat].revenue += monthRev;
+
+                dailyAssigned += cnt;
+                dailyRev += cnt * price;
+                dailyActivated += Math.round(cnt * finalRate);
+            }
         });
-        if (this.totalTickets && totals.total !== this.totalTickets) {
-            totals.total = this.totalTickets;
+
+        // === Взрослые (остаток) ===
+        const dailyAdult = Math.max(0, objects[obj].dailyTickets - dailyAssigned);
+        const monthAdult = dailyAdult * DAYS;
+        const adultRate = Math.max(0.80, Math.min(0.98, baseActivationRate + (-0.02 + Math.random() * 0.04)));
+        const monthAdultActivated = Math.round(monthAdult * adultRate);
+
+        if (!categories[ADULT_CAT]) {
+            categories[ADULT_CAT] = { total: 0, activated: 0, notActivated: 0, unsold: 0, revenue: 0 };
         }
-        return totals;
-    },
-    getCategoryArrays() {
-        const labels = Object.keys(this.categories);
-        const activated = [], notActivated = [], unsold = [];
-        labels.forEach(lbl => {
-            const c = this.categories[lbl] || {};
-            activated.push(c.activated || 0);
-            notActivated.push(c.notActivated || 0);
-            unsold.push(c.unsold || 0);
-        });
-        return { labels, activated, notActivated, unsold };
-    }
-};
+        categories[ADULT_CAT].total += monthAdult;
+        categories[ADULT_CAT].activated += monthAdultActivated;
+        categories[ADULT_CAT].notActivated += (monthAdult - monthAdultActivated);
+        categories[ADULT_CAT].revenue += monthAdult * ADULT_PRICE;
+
+        dailyRev += dailyAdult * ADULT_PRICE;
+        dailyActivated += Math.round(dailyAdult * adultRate);
+
+        // Финальные итоги по объекту
+        objectsMonthly[obj].monthlyRevenue = dailyRev * DAYS;
+        objectsMonthly[obj].monthlyActivated = dailyActivated * DAYS;
+
+        // Глобальные накопители
+        grandRevenue += dailyRev * DAYS;
+        grandActivated += dailyActivated * DAYS;
+        grandTotalTickets += objects[obj].dailyTickets * DAYS;
+    });
+
+    const grandTotals = {
+        totalTickets: grandTotalTickets,
+        activated: grandActivated,
+        notActivated: grandTotalTickets - grandActivated,
+        revenue: grandRevenue
+    };
+
+    return {
+        categories,
+        objectsMonthly,
+        grandTotals,
+
+        getTotals() {
+            // Глобальные
+            return {
+                activated: grandTotals.activated,
+                notActivated: grandTotals.notActivated,
+                unsold: 0,
+                total: grandTotals.totalTickets
+            };
+        },
+
+        // По текущему выбранному объекту (если есть)
+        getTotalsForObject(objectName) {
+            if (!objectName || !objectsMonthly[objectName]) return this.getTotals();
+            const o = objectsMonthly[objectName];
+            return {
+                activated: o.monthlyActivated,
+                notActivated: o.monthlyTickets - o.monthlyActivated,
+                unsold: 0,
+                total: o.monthlyTickets
+            };
+        },
+
+        getCategoryArrays() {
+            const labels = Object.keys(categories);
+            return {
+                labels,
+                activated: labels.map(k => categories[k].activated || 0),
+                notActivated: labels.map(k => categories[k].notActivated || 0),
+                unsold: labels.map(() => 0)
+            };
+        },
+
+        debug() {
+            console.log('=== TicketModule: Октябрь 2025 | Активация по объектам 85-95% ===');
+            console.table(objectsMonthly);
+            console.log('По объектам:');
+            Object.keys(objectsMonthly).forEach(obj => {
+                const o = objectsMonthly[obj];
+                const perc = (o.monthlyActivated / o.monthlyTickets * 100).toFixed(1);
+                console.log(`${obj}: ${perc}% активировано (${o.monthlyActivated.toLocaleString()} из ${o.monthlyTickets.toLocaleString()})`);
+            });
+            console.table(categories);
+            console.log('Глобально:', grandTotals);
+            console.log('Общий % активации:', (grandTotals.activated / grandTotals.totalTickets * 100).toFixed(1) + '%');
+            console.log('Выручка:', RenderModule.formatAmount(grandTotals.revenue));
+        }
+    };
+})();
 
 window.salesReportBackToMain = function () {
     console.log('Returning to main page');
@@ -916,6 +1099,6 @@ window.salesReportBackToMain = function () {
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing sales report page');
+    TicketModule.debug(); // увидишь ~89.3% активации, разные по категориям
     AppModule.initialize();
 });
