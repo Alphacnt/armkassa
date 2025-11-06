@@ -1,109 +1,34 @@
 console.log('reports.js loaded at:', new Date().toISOString());
 
+// === ДЕТЕРМИНИРОВАННЫЙ РАНДОМ (ФИКСИРОВАННЫЕ ДАННЫЕ НАВСЕГДА!) ===
+const DeterministicRandom = (function () {
+    let seed = 42;
+    function xorshift() {
+        seed ^= seed << 13;
+        seed ^= seed >> 17;
+        seed ^= seed << 5;
+        return (seed >>> 0) / 4294967295; // 0..1
+    }
+    return {
+        random() { return xorshift(); },
+        int(min, max) { return min + Math.floor(xorshift() * (max - min + 1)); },
+        choice(arr) { return arr[this.int(0, arr.length - 1)]; },
+        reset() { seed = 42; }
+    };
+})();
+
 // Вспомогательная функция
 function el(id) {
     return document.getElementById(id) || null;
 }
 
-// === РЕАЛЬНЫЕ ДАННЫЕ ПО ПОСТУПЛЕНИЯМ (ОБНОВЛЕНО: 19 видов оплаты, ~450к транзакций, 1.48 млрд ₸) ===
-function generateRealPaymentsData() {
-    const payments = [];
-    const startDate = new Date('2025-10-01');
-    const DAYS = 31;
-    const objects = ['Мавзолей Ходжи Ахмеда Ясави', 'Мавзолей Арыстан Баб', 'Музей-заповедник Отырар', 'Мавзолей Айша-Биби', 'Мавзолей Карахан'];
-    const terminalsPerObject = {
-        'Мавзолей Ходжи Ахмеда Ясави': ['TERM-001', 'TERM-002', 'TERM-003', 'TERM-004', 'TERM-005'],
-        'Мавзолей Арыстан Баб': ['TERM-101', 'TERM-102', 'TERM-103', 'TERM-104'],
-        'Музей-заповедник Отырар': ['TERM-201', 'TERM-202', 'TERM-203', 'TERM-204'],
-        'Мавзолей Айша-Биби': ['TERM-301', 'TERM-302', 'TERM-303'],
-        'Мавзолей Карахан': ['TERM-401', 'TERM-402', 'TERM-403']
-    };
-
-    // 19 видов оплаты — максимально реалистично
-    const paymentTypes = [
-        'Купюры', 'Монеты', 'Kaspi.kz'
-    ];
-
-    const typeWeights = {
-        'Kaspi.kz': 0.45,
-        'Купюры': 0.35,
-        'Монеты': 0.20
-    };
-
-    const hourWeights = Array(24).fill(0.01);
-    for (let h = 8; h <= 20; h++) hourWeights[h] = 1.5;
-    for (let h = 10; h <= 18; h++) hourWeights[h] = 3.0;
-    const hourSum = hourWeights.reduce((a, b) => a + b, 0);
-
-    objects.forEach(obj => {
-        const baseDaily = obj.includes('Ясави') ? 8500000 :
-            obj.includes('Отырар') || obj.includes('Арыстан') ? 5500000 :
-                3500000;
-        const terminals = terminalsPerObject[obj];
-
-        for (let day = 0; day < DAYS; day++) {
-            const date = new Date(startDate);
-            date.setDate(1 + day);
-            const dateStr = date.toISOString().split('T')[0];
-            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-            const dayMult = isWeekend ? 1.65 + Math.random() * 0.35 : 0.88 + Math.random() * 0.24;
-
-            let dailyAmount = Math.round(baseDaily * dayMult * (0.88 + Math.random() * 0.24));
-            let remaining = dailyAmount;
-
-            while (remaining > 0) {
-                const type = weightedRandom(typeWeights, paymentTypes);
-                const baseAmt = type.includes('Купюры') ? parseInt(type.split(' ')[1]) :
-                    type.includes('Монеты') ? parseInt(type.split(' ')[1]) :
-                        type.includes('Kaspi') || type.includes('QR') ? 2800 :
-                            type.includes('Карта') ? 3500 : 6000;
-                const amount = Math.round(baseAmt * (0.65 + Math.random() * 0.7));
-                if (amount > remaining) continue;
-
-                let hour;
-                do { hour = Math.floor(Math.random() * 24); } while (Math.random() > hourWeights[hour] / hourSum);
-                const minute = Math.floor(Math.random() * 60);
-                const second = Math.floor(Math.random() * 60);
-                const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`;
-
-                const terminal = terminals[Math.floor(Math.random() * terminals.length)];
-
-                payments.push({
-                    id: payments.length + 1,
-                    date: dateStr,
-                    time: timeStr,
-                    object: obj,
-                    terminal,
-                    type,
-                    amount,
-                    status: Math.random() < 0.996 ? 'Успешно' : 'Отменено'
-                });
-
-                remaining -= amount;
-            }
-        }
-    });
-
-    function weightedRandom(weights, items) {
-        const total = Object.values(weights).reduce((s, w) => s + w, 0);
-        let r = Math.random() * total;
-        for (let i = 0; i < items.length; i++) {
-            r -= weights[items[i]] || 0;
-            if (r <= 0) return items[i];
-        }
-        return items[items.length - 1];
-    }
-
-    console.log('generateRealPaymentsData: сгенерировано', payments.length, 'транзакций, ~', (payments.reduce((s, p) => s + p.amount, 0) / 1000000000).toFixed(3), 'млрд ₸');
-    return payments;
-}
-
-// === УМНЫЕ ДАННЫЕ: генерируем ТОЛЬКО агрегаты, а НЕ 460к объектов! ===
+// === ФИКСИРОВАННЫЕ ДАННЫЕ: PrecomputedData с seed 42 ===
 const PrecomputedData = (function () {
+    DeterministicRandom.reset(); // <--- 100% одинаковые данные при каждом запуске
+
     const DAYS = 31;
     const objects = ['Мавзолей Ходжи Ахмеда Ясави', 'Мавзолей Арыстан Баб', 'Музей-заповедник Отырар', 'Мавзолей Айша-Биби', 'Мавзолей Карахан'];
 
-    // Базовые ежедневные суммы (реальные, октябрь 2025)
     const baseDaily = {
         'Мавзолей Ходжи Ахмеда Ясави': 8500000,
         'Мавзолей Арыстан Баб': 5500000,
@@ -116,7 +41,7 @@ const PrecomputedData = (function () {
         'Купюры', 'Монеты', 'Kaspi.kz'
     ];
 
-    const typeShare = [0.45, 0.35, 0.20];
+    const typeShare = [0.3, 0.15, 0.55];
 
     const terminals = {
         'Мавзолей Ходжи Ахмеда Ясави': ['TERM-001', 'TERM-002', 'TERM-003', 'TERM-004', 'TERM-005'],
@@ -131,7 +56,12 @@ const PrecomputedData = (function () {
 
     objects.forEach(obj => {
         data.byObject[obj] = {
-            totalAmount: 0, transactions: 0, byType: {}, byDate: {}, byHour: Array(24).fill(0), terminals: new Set(terminals[obj])
+            totalAmount: 0,
+            transactions: 0,
+            byType: {},
+            byDate: {},
+            byHour: Array(24).fill(0),
+            terminals: new Set(terminals[obj])
         };
         paymentTypes.forEach(t => data.byObject[obj].byType[t] = 0);
 
@@ -144,84 +74,73 @@ const PrecomputedData = (function () {
             const isWeekend = date.getDay() === 0 || date.getDay() === 6;
             const dayOfMonth = date.getDate();
 
-            // === ВОЛНА: базовый множитель + тренд + случайные скачки ===
             let volatility = 1.0;
-
-            // Выходные — +60%
             if (isWeekend) volatility *= 1.6;
 
-            // Праздники / события (реальные даты октября)
-            if (dayOfMonth === 1) volatility *= 0.4; // День пожилых — тихо
-            if (dayOfMonth === 7) volatility *= 2.1; // Всплеск туристов
-            if (dayOfMonth === 12) volatility *= 0.6; // Дождь
-            if (dayOfMonth === 18) volatility *= 1.9; // Фестиваль
-            if (dayOfMonth === 25) volatility *= 2.3; // Республика күні
-            if (dayOfMonth === 30) volatility *= 0.7; // Хэллоуин — все по домам
+            // Фиксированные события октября
+            const events = { 1: 0.4, 7: 2.1, 12: 0.6, 18: 1.9, 25: 2.3, 30: 0.7 };
+            if (events[dayOfMonth]) volatility *= events[dayOfMonth];
 
-            // Случайные бури: ±25% от предыдущего дня
-            const randomShock = 0.75 + Math.random() * 0.50; // 0.75..1.25
+            const randomShock = 0.75 + DeterministicRandom.random() * 0.50;
             volatility *= randomShock;
 
-            // Тренд: середина месяца +15%, конец -10%
             if (dayOfMonth > 10 && dayOfMonth < 20) volatility *= 1.15;
             if (dayOfMonth > 25) volatility *= 0.9;
 
-            // Плавный дрейф от предыдущего дня
-            const drift = 0.85 + Math.random() * 0.30;
+            const drift = 0.85 + DeterministicRandom.random() * 0.30;
             previousDayAmount = previousDayAmount * drift;
 
-            let dailyTotal = Math.round(previousDayAmount * volatility * (0.8 + Math.random() * 0.4));
-            dailyTotal = Math.max(dailyTotal, baseDaily[obj] * 0.5); // не ниже 50%
+            let dailyTotal = Math.round(previousDayAmount * volatility * (0.8 + DeterministicRandom.random() * 0.4));
+            dailyTotal = Math.max(dailyTotal, baseDaily[obj] * 0.5);
 
             data.byObject[obj].byDate[dateStr] = dailyTotal;
             data.byObject[obj].totalAmount += dailyTotal;
             previousDayAmount = dailyTotal;
 
-            // По типам (сильный разброс)
+            // По типам оплаты
             let remaining = dailyTotal;
             paymentTypes.forEach((type, i) => {
-                const shareVariation = typeShare[i] * (0.6 + Math.random() * 0.8);
+                const shareVariation = typeShare[i] * (0.6 + DeterministicRandom.random() * 0.8);
                 const amount = Math.round(dailyTotal * shareVariation);
                 data.byObject[obj].byType[type] += amount;
                 remaining -= amount;
             });
-            // Остаток — в Kaspi QR
-            data.byObject[obj].byType['Kaspi QR'] += remaining;
+            data.byObject[obj].byType['Kaspi QR'] += remaining || 0;
 
-            // По часам — пики ещё резче
+            // По часам
             for (let h = 0; h < 24; h++) {
                 let hourWeight = 0.1;
-                if (h >= 9 && h <= 19) hourWeight = 2.5 + Math.random() * 2;
-                if (h >= 11 && h <= 16) hourWeight = 5 + Math.random() * 3;
+                if (h >= 9 && h <= 19) hourWeight = 2.5 + DeterministicRandom.random() * 2;
+                if (h >= 11 && h <= 16) hourWeight = 5 + DeterministicRandom.random() * 3;
                 data.byObject[obj].byHour[h] += Math.round(dailyTotal * hourWeight / 70);
             }
 
-            data.byObject[obj].transactions += Math.round(dailyTotal / (2800 + Math.random() * 1500));
+            data.byObject[obj].transactions += Math.round(dailyTotal / (2800 + DeterministicRandom.random() * 1500));
 
-            // 30 примеров транзакций в день
-            if (day % 1 === 0) {
-                for (let i = 0; i < 30; i++) {
-                    const typeIdx = weightedChoice();
-                    const baseAmt = paymentTypes[typeIdx].includes('Купюры') ? parseInt(paymentTypes[typeIdx].split(' ')[1]) || 2800 : 2800;
-                    const amount = Math.round(baseAmt * (0.6 + Math.random() * 0.8));
-                    const hour = 8 + Math.floor(Math.random() * 13);
-                    const time = `${hour.toString().padStart(2, '0')}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}:00`;
-                    data.allPayments.push({
-                        date: dateStr,
-                        time,
-                        object: obj,
-                        terminal: terminals[obj][Math.floor(Math.random() * terminals[obj].length)],
-                        type: paymentTypes[typeIdx],
-                        amount,
-                        status: Math.random() < 0.97 ? 'Успешно' : 'Отменено'
-                    });
-                }
+            // 30 транзакций в день (всегда одинаковые)
+            for (let i = 0; i < 30; i++) {
+                const typeIdx = weightedChoice();
+                const baseAmt = paymentTypes[typeIdx].includes('Купюры') || paymentTypes[typeIdx].includes('Монеты')
+                    ? parseInt(paymentTypes[typeIdx].split(' ')[1]) || 2800 : 2800;
+                const amount = Math.round(baseAmt * (0.6 + DeterministicRandom.random() * 0.8));
+                const hour = 8 + DeterministicRandom.int(0, 12);
+                const minute = DeterministicRandom.int(0, 59);
+                const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
+                data.allPayments.push({
+                    date: dateStr,
+                    time,
+                    object: obj,
+                    terminal: DeterministicRandom.choice(terminals[obj]),
+                    type: paymentTypes[typeIdx],
+                    amount,
+                    status: DeterministicRandom.random() < 0.97 ? 'Успешно' : 'Отменено'
+                });
             }
         }
     });
 
     function weightedChoice() {
-        const r = Math.random();
+        const r = DeterministicRandom.random();
         let sum = 0;
         for (let i = 0; i < typeShare.length; i++) {
             sum += typeShare[i];
@@ -230,12 +149,11 @@ const PrecomputedData = (function () {
         return 0;
     }
 
-    console.log('PrecomputedData: готово за <1 сек, транзакций в таблице:', data.allPayments.length);
+    console.log('PrecomputedData: ФИКСИРОВАННЫЕ данные готовы! Транзакций в таблице:', data.allPayments.length);
     return data;
 })();
 
 // Модуль данных
-// Модуль данных — теперь молниеносный
 const DataModule = {
     paymentsData: PrecomputedData.allPayments,
     filteredData: [],
@@ -256,11 +174,9 @@ const DataModule = {
         });
     },
     aggregateByObject(data = this.filteredData) {
-        // Если фильтр — всё, используем кэш (быстро!)
         if (!data.length || data.length === this.paymentsData.length) {
             return this.byObjectCache;
         }
-        // Иначе — считаем на лету (редко)
         const result = {};
         data.forEach(p => {
             if (!result[p.object]) {
@@ -324,8 +240,8 @@ const RenderModule = {
             .forEach(([obj, stats], i) => {
                 const row = document.createElement('tr');
                 const kaspi = (stats.byType['Kaspi QR'] || 0) + (stats.byType['Kaspi Gold'] || 0) + (stats.byType['Kaspi Red'] || 0);
-                const cash = Object.keys(stats.byType).filter(t => t.includes('Купюры')).reduce((s, t) => s + (stats.byType[t] || 0), 0);
-                const cards = (stats.byType['Карта Visa/MC'] || 0) + (stats.byType['Карта UnionPay'] || 0);
+                const cash = Object.keys(stats.byType).filter(t => t.includes('Купюры') || t.includes('Монеты')).reduce((s, t) => s + (stats.byType[t] || 0), 0);
+                const cards = (stats.byType['Карта Visa/MC'] || 0) + (stats.byType['Карта UnionPay'] || 0) + (stats.byType['Apple Pay'] || 0) + (stats.byType['Google Pay'] || 0);
                 row.innerHTML = `
                     <td>${i + 1}</td>
                     <td><a href="#" class="object-link text-primary fw-500" data-object="${encodeURIComponent(obj)}">${obj}</a></td>
@@ -355,8 +271,8 @@ const RenderModule = {
         Object.entries(objects).forEach(([obj, stats]) => {
             const perc = total ? (stats.totalAmount / total * 100).toFixed(1) : 0;
             const avg = stats.transactions ? Math.round(stats.totalAmount / stats.transactions) : 0;
-            const kaspi = (stats.byType['Kaspi QR'] || 0) + (stats.byType['Kaspi Gold'] || 0);
-            const topCash = Object.keys(stats.byType).filter(t => t.includes('Купюры')).sort((a, b) => (stats.byType[b] || 0) - (stats.byType[a] || 0))[0] || '';
+            const kaspi = (stats.byType['Kaspi QR'] || 0) + (stats.byType['Kaspi Gold'] || 0) + (stats.byType['Kaspi Red'] || 0);
+            const topCash = Object.keys(stats.byType).filter(t => t.includes('Купюры') || t.includes('Монеты')).sort((a, b) => (stats.byType[b] || 0) - (stats.byType[a] || 0))[0] || '';
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${obj}</td>
@@ -454,7 +370,6 @@ const ChartModule = {
         const byDate = {};
         data.forEach(p => byDate[p.date] = (byDate[p.date] || 0) + p.amount);
 
-        // Если фильтр — всё, берём из кэша (супер-волатильно!)
         if (data.length === DataModule.paymentsData.length) {
             Object.values(DataModule.byObjectCache).forEach(obj => {
                 Object.entries(obj.byDate).forEach(([d, a]) => {
@@ -476,7 +391,7 @@ const ChartModule = {
                     borderColor: '#ef4444',
                     backgroundColor: 'rgba(239, 68, 68, 0.15)',
                     fill: true,
-                    tension: 0.1, // резкие углы!
+                    tension: 0.1,
                     pointBackgroundColor: '#dc2626',
                     pointRadius: 4,
                     pointHoverRadius: 7,
@@ -590,9 +505,8 @@ const AppModule = {
     async initialize() {
         if (this.isInitialized) return;
         this.isInitialized = true;
-        RenderModule.showLoading(); // покажем "Загрузка..."
+        RenderModule.showLoading();
 
-        // Данные уже готовы — 0.1 сек
         await DataModule.fetchPaymentsData();
 
         this.bindEventListeners();
@@ -600,7 +514,7 @@ const AppModule = {
         if (el('reportsTable')) RenderModule.renderReportsTable(DataModule.filteredData);
         if (el('dashboardPage')) window.reportsShowDashboard(null);
 
-        setTimeout(() => RenderModule.hideLoading(), 500); // спрячем
+        setTimeout(() => RenderModule.hideLoading(), 500);
     },
     bindEventListeners() {
         el('newReportBtn')?.addEventListener('click', () => this.handleFilter());
