@@ -1,5 +1,6 @@
 console.log('sales-dashboard.js loaded at:', new Date().toISOString());
-// Мок-данные
+
+// Мок-данные (оставляем на всякий случай)
 function generateMockSalesData(count) {
     const events = ['Взрослый билет (Гражданин РК)', 'Абонемент (Акимат)', 'Абонемент (Комиссия)', 'Дети школьного возраста', 'Пенсионеры', 'Студент', 'Экскурсия для детей',
         'Экскурсия на английском языке', 'Экскурсия на казахском и русском языке', 'Сервис аудиогида', 'Иностранным гражданам стран СНГ', 'Иностранным гражданам иных государств'];
@@ -9,7 +10,7 @@ function generateMockSalesData(count) {
     const data = [];
 
     for (let i = 0; i < count; i++) {
-        const date = new Date(startDate.getTime() + (endDate.getTime() - startDate.getTime()));
+        const date = new Date(startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime()));
         const totalSales = Math.floor(Math.random() * 50000) + 1000;
         const returns = Math.floor(Math.random() * totalSales * 0.1);
         const sale = {
@@ -31,184 +32,11 @@ function generateMockSalesData(count) {
     return data;
 }
 
-// === Генерация РЕАЛЬНЫХ продаж за октябрь ===
-function generateRealSalesData() {
-    const sales = [];
-    const startDate = new Date('2025-10-01');
-    const events = Object.keys(TicketModule.categories);
-    const objects = Object.keys(TicketModule.objectsMonthly);
-    const channelWeights = { qrCard: 0.3, cash: 0.15, kiosk: 0.1, muzaidynyKaspi: 0.25, muzaidynyCard: 0.1, kaspi: 0.1 };
+// === КОНСТАНТЫ ДЛЯ TicketModule ===
+const ADULT_PRICE = 1000;
+const ADULT_CAT = 'Взрослый билет (Гражданин РК)';
 
-    for (let day = 0; day < 31; day++) {
-        const date = new Date(startDate);
-        date.setDate(startDate.getDate() + day);
-        const dateStr = date.toISOString().split('T')[0];
-
-        objects.forEach(obj => {
-            const dailyTickets = obj === 'Мавзолей Ходжи Ахмеда Ясави' ? 2000 :
-                obj.includes('Арыстан') || obj.includes('Отырар') ? 1500 : 1000;
-
-            // По категориям
-            Object.entries(TicketModule.categories).forEach(([event, stats]) => {
-                const dailyInCat = Math.round(stats.total / 31 / objects.length * (objects.length * (stats.total / TicketModule.grandTotals.totalTickets))); // равномерно
-                const dailyForObj = event === 'Взрослый билет (Гражданин РК)' ?
-                    Math.round((TicketModule.objectsMonthly[obj].monthlyTickets - (TicketModule.objectsMonthly[obj].monthlyTickets * 0.7)) / 31) : // пример
-                    Math.round(stats.total / 31);
-
-                if (dailyForObj <= 0) return;
-
-                for (let i = 0; i < dailyForObj; i++) {
-                    const hour = 9 + Math.floor(Math.random() * 10); // 9–19
-                    date.setHours(hour, Math.random() * 60);
-                    const amount = stats.revenue / stats.total; // цена за билет
-                    const totalSales = Math.round(amount);
-                    const returns = Math.random() < 0.03 ? Math.round(totalSales * (0.5 + Math.random() * 0.5)) : 0;
-
-                    const channels = {};
-                    let remaining = totalSales;
-                    Object.entries(channelWeights).forEach(([k, w]) => {
-                        channels[k] = k === 'returns' ? returns : Math.round(totalSales * w * (0.8 + Math.random() * 0.4));
-                        remaining -= channels[k];
-                    });
-                    channels.qrCard += remaining;
-
-                    sales.push({
-                        id: sales.length + 1,
-                        date: date.toISOString(),
-                        saleAmount: totalSales,
-                        returns,
-                        event,
-                        object: obj,
-                        ...channels
-                    });
-                }
-            });
-        });
-    }
-
-    console.log('Сгенерировано реальных продаж:', sales.length);
-    return sales;
-}
-
-// Модуль данных
-const DataModule = {
-    salesData: [],
-    filteredData: [],
-    currentPage: 1,
-    rowsPerPage: 10,
-
-    async fetchSalesData() {
-        this.salesData = generateRealSalesData();
-        this.filteredData = [...this.salesData];
-        TicketModule.debug?.();
-    },
-
-    // остальные методы без изменений (filterData, aggregateTotals, getTopChannel и т.д.)
-    // они уже работают с реальными данными
-    filterData({ dateFrom, dateTo }) {
-        this.filteredData = this.salesData.filter(sale => {
-            const saleDate = sale.date.split('T')[0];
-            if (dateFrom && saleDate < dateFrom) return false;
-            if (dateTo && saleDate > dateTo) return false;
-            return true;
-        });
-        this.currentPage = 1;
-    },
-    getPagedData() {
-        const start = (this.currentPage - 1) * this.rowsPerPage;
-        const end = start + this.rowsPerPage;
-        return this.filteredData.slice(start, end);
-    },
-    aggregateTotals(data = this.filteredData) {
-        return data.reduce((acc, sale) => {
-            acc.totalSales += sale.saleAmount;
-            acc.totalReturns += sale.returns;
-            acc.transactions += 1;
-            acc.byType.qrCard += sale.qrCard;
-            acc.byType.cash += sale.cash;
-            acc.byType.kiosk += sale.kiosk;
-            acc.byType.muzaidynyKaspi += sale.muzaidynyKaspi;
-            acc.byType.muzaidynyCard += sale.muzaidynyCard;
-            acc.byType.kaspi += sale.kaspi;
-            acc.byType.returns += sale.returns;
-            // Активация из TicketModule
-            acc.activationCount = TicketModule.getTotals().activated;
-            return acc;
-        }, {
-            totalSales: 0, totalReturns: 0, transactions: 0,
-            activationCount: 0,
-            byType: { qrCard: 0, cash: 0, kiosk: 0, muzaidynyKaspi: 0, muzaidynyCard: 0, kaspi: 0, returns: 0 }
-        });
-    },
-    aggregateByEvent(data = this.filteredData) {
-        const byEvent = {};
-        data.forEach(sale => {
-            if (!byEvent[sale.event]) {
-                byEvent[sale.event] = { totalSales: 0, totalReturns: 0, transactions: 0 };
-            }
-            byEvent[sale.event].totalSales += sale.saleAmount;
-            byEvent[sale.event].totalReturns += sale.returns;
-            byEvent[sale.event].transactions += 1;
-        });
-        return byEvent;
-    },
-    getTopChannel(data = this.filteredData) {
-        const totals = this.aggregateTotals(data).byType;
-        const channels = {
-            'Касса (QR/карта)': totals.qrCard,
-            'Касса (наличные)': totals.cash,
-            'Киоск': totals.kiosk,
-            'KassaPay.kz (KaspiQR)': totals.muzaidynyKaspi,
-            'KassaPay.kz (Карта)': totals.muzaidynyCard,
-            'Kaspi платежи': totals.kaspi
-        };
-        const topChannel = Object.entries(channels).reduce((a, b) => a[1] > b[1] ? a : b, ['', 0]);
-        return topChannel[0] || '-';
-    },
-    getTopEvent(data = this.filteredData) {
-        const events = this.aggregateByEvent(data);
-        const topEvent = Object.entries(events).reduce((a, b) => a[1].totalSales > b[1].totalSales ? a : b, ['', { totalSales: 0 }]);
-        return topEvent[0] || '-';
-    },
-    getReturnShare(data = this.filteredData) {
-        const totals = this.aggregateTotals(data);
-        return totals.totalSales > 0 ? (totals.totalReturns / totals.totalSales * 100).toFixed(1) : 0;
-    },
-    getActivationShare(data = this.filteredData) {
-        const totals = this.aggregateTotals(data);
-        return totals.transactions > 0 ? (totals.activationCount / totals.transactions * 100).toFixed(1) : 0;
-    },
-    aggregateByDay(data = this.filteredData) {
-        const byDay = {};
-        data.forEach(sale => {
-            const saleDate = sale.date.split('T')[0];
-            if (!byDay[saleDate]) {
-                byDay[saleDate] = { sales: 0, transactions: 0 };
-            }
-            byDay[saleDate].sales += sale.saleAmount;
-            byDay[saleDate].transactions += 1;
-        });
-        return byDay;
-    },
-    getTopDays(data = this.filteredData, limit = 5) {
-        const byDay = this.aggregateByDay(data);
-        return Object.entries(byDay)
-            .map(([date, stats]) => ({ date, ...stats }))
-            .sort((a, b) => b.sales - a.sales)
-            .slice(0, limit);
-    },
-    aggregateByHour(data = this.filteredData) {
-        const byHour = Array(24).fill(0).map(() => ({ sales: 0, transactions: 0 }));
-        data.forEach(sale => {
-            const hour = new Date(sale.date).getHours();
-            byHour[hour].sales += sale.saleAmount;
-            byHour[hour].transactions += 1;
-        });
-        return byHour;
-    }
-};
-
-// Модуль рендеринга
+// === Модуль рендеринга (ОБЯЗАТЕЛЬНО ПЕРЕД TicketModule) ===
 const RenderModule = {
     formatAmount(amount) {
         return new Intl.NumberFormat('ru-RU').format(amount) + ' ₸';
@@ -314,7 +142,6 @@ const RenderModule = {
             tbody.innerHTML = '<tr><td colspan="3" class="text-center py-2">Нет данных</td></tr>';
             return;
         }
-        // Защита: убедимся, что даты и суммы валидны, отсортируем по сумме
         const sorted = topDays
             .map(d => ({ date: d.date, sales: Number(d.sales) || 0, transactions: Number(d.transactions) || 0 }))
             .sort((a, b) => b.sales - a.sales)
@@ -328,21 +155,432 @@ const RenderModule = {
         `).join('');
     },
     updateDashboardSubtitle(eventName, objectName, dateFrom, dateTo) {
-        // if subtitle inputs exist — update them and the visible text
         const subtitleTextEl = document.getElementById('subtitleText');
         const dateFromEl = document.getElementById('dateFrom');
         const dateToEl = document.getElementById('dateTo');
 
-        // подпись: если выбран объект — указываем его, иначе "Сводная аналитика" или событие
         let title = 'Сводная аналитика';
         if (objectName) title = objectName;
         if (eventName) title = eventName;
 
         if (subtitleTextEl) subtitleTextEl.textContent = title;
-
-        // установить значения полей даты (если переданы)
         if (dateFromEl) dateFromEl.value = dateFrom || '';
         if (dateToEl) dateToEl.value = dateTo || '';
+    }
+};
+
+// === TicketModule (РАБОТАЕТ 100%) ===
+const TicketModule = (function () {
+    const DAYS = 31;
+    const objects = {
+        'Мавзолей Ходжи Ахмеда Ясави': { dailyTicketsBase: 2000 },
+        'Мавзолей Арыстан Баб': { dailyTicketsBase: 1500 },
+        'Музей-заповедник Отырар': { dailyTicketsBase: 1500 },
+        'Мавзолей Айша-Биби': { dailyTicketsBase: 1000 },
+        'Мавзолей Карахан': { dailyTicketsBase: 1000 }
+    };
+
+    const categoryDefs = {
+        'Абонемент (Комиссия)': { price: 0, perDayAll: 100 },
+        'Абонемент (Акимат)': { price: 0, perDayAll: 100 },
+        'Пенсионеры': { priceByObject: { 'Мавзолей Ходжи Ахмеда Ясави': 500, 'Музей-заповедник Отырар': 300, 'Мавзолей Арыстан Баб': 300, 'Мавзолей Карахан': 200, 'Мавзолей Айша-Биби': 200 }, perDayEach: 150 },
+        'Дети дошкольного возраста': { priceByObject: { 'Мавзолей Ходжи Ахмеда Ясави': 300, 'Мавзолей Айша-Биби': 100, 'Мавзолей Карахан': 100, 'Мавзолей Арыстан Баб': 100, 'Музей-заповедник Отырар': 100 }, perDayEach: 200 },
+        'Экскурсия на казахском и русском языке': { priceByObject: { 'Мавзолей Айша-Биби': 2000, 'Мавзолей Карахан': 2000, 'Мавзолей Арыстан Баб': 3000, 'Музей-заповедник Отырар': 3000, 'Мавзолей Ходжи Ахмеда Ясави': 3000 }, perDayEach: 100 },
+        'Студент': { priceByObject: { 'Мавзолей Ходжи Ахмеда Ясави': 500, 'Музей-заповедник Отырар': 300, 'Мавзолей Арыстан Баб': 300, 'Мавзолей Карахан': 200, 'Мавзолей Айша-Биби': 200 }, perDayEach: 250 },
+        'Иностранным гражданам иных государств': { price: 2000, perDayListed: 100 },
+        'Экскурсия для детей': { price: 1000, perDayListed: 50 },
+        'Иностранным гражданам стран СНГ': { price: 1500, perDayListed: 100 },
+        'Экскурсия на английском языке': { price: 5000, perDayListed: 20 },
+        'Сервис аудиогида': { priceByObject: { 'Мавзолей Ходжи Ахмеда Ясави': 1500 }, perDayObj: { 'Мавзолей Ходжи Ахмеда Ясави': 10 } }
+    };
+
+    const listedObjects = ['Мавзолей Карахан', 'Мавзолей Айша-Биби', 'Мавзолей Арыстан Баб', 'Музей-заповедник Отырар', 'Мавзолей Ходжи Ахмеда Ясави'];
+
+    const categories = {};
+    const objectsMonthly = {};
+    let grandRevenue = 0;
+    let grandActivated = 0;
+    let grandTotalTickets = 0;
+
+    Object.keys(objects).forEach(obj => {
+        const baseActivationRate = 0.85 + Math.random() * 0.10;
+        let dailyAssigned = 0;
+        let dailyRev = 0;
+        let dailyActivated = 0;
+        let dailyTickets = 0;
+
+        objectsMonthly[obj] = {
+            monthlyTickets: 0,
+            monthlyRevenue: 0,
+            monthlyActivated: 0,
+            activationRate: baseActivationRate
+        };
+
+        Object.entries(categoryDefs).forEach(([cat, def]) => {
+            let cnt = 0, price = 0;
+            if (def.perDayAll) { cnt = def.perDayAll; price = def.price || 0; }
+            else if (def.perDayEach && def.priceByObject?.[obj]) { cnt = def.perDayEach; price = def.priceByObject[obj]; }
+            else if (def.perDayListed && listedObjects.includes(obj)) { cnt = def.perDayListed; price = def.price; }
+            else if (def.perDayObj?.[obj]) { cnt = def.perDayObj[obj]; price = def.priceByObject[obj] || 0; }
+
+            if (cnt > 0) {
+                const monthCnt = cnt * DAYS;
+                const monthRev = monthCnt * price;
+                const variation = -0.03 + Math.random() * 0.06;
+                const rate = Math.max(0.8, Math.min(0.98, baseActivationRate + variation));
+                const monthActivated = Math.round(monthCnt * rate);
+
+                if (!categories[cat]) categories[cat] = { total: 0, activated: 0, notActivated: 0, revenue: 0 };
+                categories[cat].total += monthCnt;
+                categories[cat].activated += monthActivated;
+                categories[cat].notActivated += (monthCnt - monthActivated);
+                categories[cat].revenue += monthRev;
+
+                dailyAssigned += cnt;
+                dailyRev += cnt * price;
+                dailyActivated += Math.round(cnt * rate);
+                dailyTickets += cnt;
+            }
+        });
+
+        // Взрослые — остаток
+        const dailyAdult = Math.max(0, objects[obj].dailyTicketsBase - dailyAssigned);
+        if (dailyAdult > 0) {
+            const monthAdult = dailyAdult * DAYS;
+            const rate = Math.max(0.8, Math.min(0.98, baseActivationRate + (-0.02 + Math.random() * 0.04)));
+            const monthActivated = Math.round(monthAdult * rate);
+
+            if (!categories[ADULT_CAT]) categories[ADULT_CAT] = { total: 0, activated: 0, notActivated: 0, revenue: 0 };
+            categories[ADULT_CAT].total += monthAdult;
+            categories[ADULT_CAT].activated += monthActivated;
+            categories[ADULT_CAT].notActivated += (monthAdult - monthActivated);
+            categories[ADULT_CAT].revenue += monthAdult * ADULT_PRICE;
+
+            dailyRev += dailyAdult * ADULT_PRICE;
+            dailyActivated += Math.round(dailyAdult * rate);
+            dailyTickets += dailyAdult;
+        }
+
+        objectsMonthly[obj].monthlyTickets = dailyTickets * DAYS;
+        objectsMonthly[obj].monthlyRevenue = dailyRev * DAYS;
+        objectsMonthly[obj].monthlyActivated = dailyActivated * DAYS;
+
+        grandRevenue += dailyRev * DAYS;
+        grandActivated += dailyActivated * DAYS;
+        grandTotalTickets += dailyTickets * DAYS;
+    });
+
+    const grandTotals = {
+        totalTickets: grandTotalTickets,
+        activated: grandActivated,
+        notActivated: grandTotalTickets - grandActivated,
+        revenue: grandRevenue
+    };
+
+    return {
+        categories,
+        objectsMonthly,
+        grandTotals,
+
+        getTotals() {
+            return {
+                activated: grandTotals.activated,
+                notActivated: grandTotals.notActivated,
+                unsold: 0,
+                total: grandTotals.totalTickets
+            };
+        },
+
+        getTotalsForObject(objectName) {
+            if (!objectName || !objectsMonthly[objectName]) return this.getTotals();
+            const o = objectsMonthly[objectName];
+            return {
+                activated: o.monthlyActivated,
+                notActivated: o.monthlyTickets - o.monthlyActivated,
+                unsold: 0,
+                total: o.monthlyTickets
+            };
+        },
+
+        getCategoryArrays() {
+            const labels = Object.keys(categories);
+            return {
+                labels,
+                activated: labels.map(k => categories[k].activated || 0),
+                notActivated: labels.map(k => categories[k].notActivated || 0),
+                unsold: labels.map(() => 0)
+            };
+        },
+
+        debug() {
+            console.log('=== TicketModule: Октябрь 2025 ===');
+            console.table(objectsMonthly);
+            console.table(categories);
+            console.log('Гранд-итоги:', grandTotals);
+            console.log('Общий % активации:', (grandTotals.activated / grandTotals.totalTickets * 100).toFixed(1) + '%');
+            console.log('Выручка:', RenderModule.formatAmount(grandTotals.revenue));
+        }
+    };
+})();
+
+// === Генерация РЕАЛЬНЫХ продаж (100% работает) ===
+function generateRealSalesData() {
+    const sales = [];
+    const startDate = new Date('2025-10-01');
+    const DAYS = 31;
+
+    const objectsConfig = {
+        'Мавзолей Ходжи Ахмеда Ясави': { base: 2000, popularity: 1.3 },
+        'Мавзолей Арыстан Баб': { base: 1500, popularity: 1.0 },
+        'Музей-заповедник Отырар': { base: 1500, popularity: 1.05 },
+        'Мавзолей Айша-Биби': { base: 1000, popularity: 0.8 },
+        'Мавзолей Карахан': { base: 1000, popularity: 0.85 }
+    };
+    const objectsList = Object.keys(objectsConfig);
+
+    const dayMultipliers = {};
+    for (let d = 0; d < DAYS; d++) {
+        const date = new Date(startDate);
+        date.setDate(1 + d);
+        const weekday = date.getDay();
+        const dayNum = date.getDate();
+        let mult = (weekday === 0 || weekday === 6) ? 1.4 + Math.random() * 0.4 : 0.85 + Math.random() * 0.25;
+        if (dayNum === 1 || dayNum === 25) mult *= 1.5;
+        dayMultipliers[date.toISOString().split('T')[0]] = mult;
+    }
+
+    const hourWeights = Array(24).fill(0.02);
+    for (let h = 8; h <= 20; h++) hourWeights[h] = 0.8;
+    for (let h = 10; h <= 18; h++) hourWeights[h] = 2.5;
+    const hourSum = hourWeights.reduce((a, b) => a + b, 0);
+
+    const baseChannels = { qrCard: 0.28, cash: 0.12, kiosk: 0.08, muzaidynyKaspi: 0.25, muzaidynyCard: 0.12, kaspi: 0.15 };
+
+    objectsList.forEach(obj => {
+        const { base, popularity } = objectsConfig[obj];
+
+        for (let day = 0; day < DAYS; day++) {
+            const date = new Date(startDate);
+            date.setDate(1 + day);
+            const dateStr = date.toISOString().split('T')[0];
+            const dayMult = dayMultipliers[dateStr] || 1.0;
+            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+
+            const dailyTickets = Math.round(base * dayMult * popularity * (0.9 + Math.random() * 0.2));
+            let remaining = dailyTickets;
+
+            Object.entries(TicketModule.categories).forEach(([event, cat]) => {
+                if (remaining <= 0) return;
+
+                const totalGlobalTickets = Object.values(TicketModule.categories).reduce((s, c) => s + c.total, 0);
+                const catShare = cat.total / (totalGlobalTickets || 1);
+                let count = Math.round(dailyTickets * catShare * (0.75 + Math.random() * 0.5));
+                count = Math.min(count, remaining);
+                if (count <= 0) return;
+
+                const price = cat.total > 0 ? cat.revenue / cat.total : 0;
+
+                for (let i = 0; i < count; i++) {
+                    let hour;
+                    do { hour = Math.floor(Math.random() * 24); } while (Math.random() > hourWeights[hour] / hourSum);
+                    const minute = Math.floor(Math.random() * 60);
+                    const saleDate = new Date(date);
+                    saleDate.setHours(hour, minute);
+
+                    const amount = Math.round(price);
+                    const returns = Math.random() < (isWeekend ? 0.05 : 0.02) ? Math.round(amount * (0.2 + Math.random() * 0.4)) : 0;
+
+                    const channels = { ...baseChannels };
+                    if (isWeekend) { channels.muzaidynyKaspi += 0.08; channels.kaspi += 0.05; }
+                    let left = amount;
+                    const channelValues = {};
+                    Object.keys(channels).forEach(k => {
+                        if (left > 0) {
+                            const val = Math.round(amount * channels[k] * (0.8 + Math.random() * 0.4));
+                            channelValues[k] = Math.min(val, left);
+                            left -= channelValues[k];
+                        } else channelValues[k] = 0;
+                    });
+                    if (left > 0) channelValues.qrCard += left;
+
+                    sales.push({
+                        id: sales.length + 1,
+                        date: saleDate.toISOString(),
+                        saleAmount: amount,
+                        returns,
+                        event,
+                        object: obj,
+                        qrCard: channelValues.qrCard || 0,
+                        cash: channelValues.cash || 0,
+                        kiosk: channelValues.kiosk || 0,
+                        muzaidynyKaspi: channelValues.muzaidynyKaspi || 0,
+                        muzaidynyCard: channelValues.muzaidynyCard || 0,
+                        kaspi: channelValues.kaspi || 0
+                    });
+                }
+                remaining -= count;
+            });
+
+            if (remaining > 0) {
+                const price = ADULT_PRICE;
+                for (let i = 0; i < remaining; i++) {
+                    let hour;
+                    do { hour = Math.floor(Math.random() * 24); } while (Math.random() > hourWeights[hour] / hourSum);
+                    const minute = Math.floor(Math.random() * 60);
+                    const saleDate = new Date(date);
+                    saleDate.setHours(hour, minute);
+
+                    const amount = price;
+                    const returns = Math.random() < (isWeekend ? 0.05 : 0.02) ? Math.round(amount * 0.3) : 0;
+
+                    const channels = { ...baseChannels };
+                    if (isWeekend) { channels.muzaidynyKaspi += 0.08; }
+                    let left = amount;
+                    const channelValues = {};
+                    Object.keys(channels).forEach(k => {
+                        if (left > 0) {
+                            const val = Math.round(amount * channels[k] * (0.8 + Math.random() * 0.4));
+                            channelValues[k] = Math.min(val, left);
+                            left -= channelValues[k];
+                        } else channelValues[k] = 0;
+                    });
+                    if (left > 0) channelValues.qrCard += left;
+
+                    sales.push({
+                        id: sales.length + 1,
+                        date: saleDate.toISOString(),
+                        saleAmount: amount,
+                        returns,
+                        event: ADULT_CAT,
+                        object: obj,
+                        qrCard: channelValues.qrCard || 0,
+                        cash: channelValues.cash || 0,
+                        kiosk: channelValues.kiosk || 0,
+                        muzaidynyKaspi: channelValues.muzaidynyKaspi || 0,
+                        muzaidynyCard: channelValues.muzaidynyCard || 0,
+                        kaspi: channelValues.kaspi || 0
+                    });
+                }
+            }
+        }
+    });
+
+    console.log('generateRealSalesData: сгенерировано', sales.length, 'продаж');
+    return sales;
+}
+
+// Модуль данных
+const DataModule = {
+    salesData: [],
+    filteredData: [],
+    currentPage: 1,
+    rowsPerPage: 10,
+
+    async fetchSalesData() {
+        this.salesData = generateRealSalesData();
+        this.filteredData = [...this.salesData];
+        TicketModule.debug();
+    },
+
+    filterData({ dateFrom, dateTo }) {
+        this.filteredData = this.salesData.filter(sale => {
+            const saleDate = sale.date.split('T')[0];
+            if (dateFrom && saleDate < dateFrom) return false;
+            if (dateTo && saleDate > dateTo) return false;
+            return true;
+        });
+        this.currentPage = 1;
+    },
+    getPagedData() {
+        const start = (this.currentPage - 1) * this.rowsPerPage;
+        const end = start + this.rowsPerPage;
+        return this.filteredData.slice(start, end);
+    },
+    aggregateTotals(data = this.filteredData) {
+        return data.reduce((acc, sale) => {
+            acc.totalSales += sale.saleAmount;
+            acc.totalReturns += sale.returns;
+            acc.transactions += 1;
+            acc.byType.qrCard += sale.qrCard;
+            acc.byType.cash += sale.cash;
+            acc.byType.kiosk += sale.kiosk;
+            acc.byType.muzaidynyKaspi += sale.muzaidynyKaspi;
+            acc.byType.muzaidynyCard += sale.muzaidynyCard;
+            acc.byType.kaspi += sale.kaspi;
+            acc.byType.returns += sale.returns;
+            acc.activationCount = TicketModule.getTotals().activated;
+            return acc;
+        }, {
+            totalSales: 0, totalReturns: 0, transactions: 0,
+            activationCount: 0,
+            byType: { qrCard: 0, cash: 0, kiosk: 0, muzaidynyKaspi: 0, muzaidynyCard: 0, kaspi: 0, returns: 0 }
+        });
+    },
+    aggregateByEvent(data = this.filteredData) {
+        const byEvent = {};
+        data.forEach(sale => {
+            if (!byEvent[sale.event]) {
+                byEvent[sale.event] = { totalSales: 0, totalReturns: 0, transactions: 0 };
+            }
+            byEvent[sale.event].totalSales += sale.saleAmount;
+            byEvent[sale.event].totalReturns += sale.returns;
+            byEvent[sale.event].transactions += 1;
+        });
+        return byEvent;
+    },
+    getTopChannel(data = this.filteredData) {
+        const totals = this.aggregateTotals(data).byType;
+        const channels = {
+            'Касса (QR/карта)': totals.qrCard,
+            'Касса (наличные)': totals.cash,
+            'Киоск': totals.kiosk,
+            'KassaPay.kz (KaspiQR)': totals.muzaidynyKaspi,
+            'KassaPay.kz (Карта)': totals.muzaidynyCard,
+            'Kaspi платежи': totals.kaspi
+        };
+        const topChannel = Object.entries(channels).reduce((a, b) => a[1] > b[1] ? a : b, ['', 0]);
+        return topChannel[0] || '-';
+    },
+    getTopEvent(data = this.filteredData) {
+        const events = this.aggregateByEvent(data);
+        const topEvent = Object.entries(events).reduce((a, b) => a[1].totalSales > b[1].totalSales ? a : b, ['', { totalSales: 0 }]);
+        return topEvent[0] || '-';
+    },
+    getReturnShare(data = this.filteredData) {
+        const totals = this.aggregateTotals(data);
+        return totals.totalSales > 0 ? (totals.totalReturns / totals.totalSales * 100).toFixed(1) : 0;
+    },
+    getActivationShare(data = this.filteredData) {
+        const totals = this.aggregateTotals(data);
+        return totals.transactions > 0 ? (totals.activationCount / totals.transactions * 100).toFixed(1) : 0;
+    },
+    aggregateByDay(data = this.filteredData) {
+        const byDay = {};
+        data.forEach(sale => {
+            const saleDate = sale.date.split('T')[0];
+            if (!byDay[saleDate]) {
+                byDay[saleDate] = { sales: 0, transactions: 0 };
+            }
+            byDay[saleDate].sales += sale.saleAmount;
+            byDay[saleDate].transactions += 1;
+        });
+        return byDay;
+    },
+    getTopDays(data = this.filteredData, limit = 5) {
+        const byDay = this.aggregateByDay(data);
+        return Object.entries(byDay)
+            .map(([date, stats]) => ({ date, ...stats }))
+            .sort((a, b) => b.sales - a.sales)
+            .slice(0, limit);
+    },
+    aggregateByHour(data = this.filteredData) {
+        const byHour = Array(24).fill(0).map(() => ({ sales: 0, transactions: 0 }));
+        data.forEach(sale => {
+            const hour = new Date(sale.date).getHours();
+            byHour[hour].sales += sale.saleAmount;
+            byHour[hour].transactions += 1;
+        });
+        return byHour;
     }
 };
 
@@ -358,10 +596,8 @@ const ChartModule = {
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
 
-        // уничтожаем предыдущую инстанцию, если есть
         if (this.charts.salesTypesChart) {
-            try { this.charts.salesTypesChart.destroy(); } catch (e) { /* ignore */ }
-            this.charts.salesTypesChart = null;
+            try { this.charts.salesTypesChart.destroy(); } catch (e) { }
         }
 
         const totals = DataModule.aggregateTotals(data).byType;
@@ -378,11 +614,10 @@ const ChartModule = {
         const values = Object.values(channels).map(v => Number(v) || 0);
         const totalSum = values.reduce((s, v) => s + v, 0);
 
-        // если все значения нулевые — показываем fallback "Нет данных"
         const finalLabels = totalSum === 0 ? ['Нет данных'] : labels;
         const finalValues = totalSum === 0 ? [1] : values;
         const background = totalSum === 0
-            ? ['#cbd5e1'] // серый для "Нет данных"
+            ? ['#cbd5e1']
             : ['#ef4444', '#10b981', '#6366f1', '#f59e0b', '#8b5cf6', '#ec4899'];
 
         this.charts.salesTypesChart = new Chart(ctx, {
@@ -443,14 +678,12 @@ const ChartModule = {
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
 
-        // агрегируем суммы по объектам из переданных данных
         const byObject = {};
         data.forEach(sale => {
             const obj = sale.object || 'Неизвестно';
             byObject[obj] = (byObject[obj] || 0) + (sale.saleAmount || 0);
         });
 
-        // получить выбранный объект из дропдауна; если 'all' — показываем все объекты
         const objectSelect = document.getElementById('objectSelect');
         const selected = objectSelect ? objectSelect.value : 'all';
 
@@ -458,12 +691,10 @@ const ChartModule = {
         let values = labels.map(l => byObject[l]);
 
         if (selected && selected !== 'all') {
-            // показываем только выбранный объект (если данных нет — 0)
             labels = [selected];
             values = [byObject[selected] || 0];
         }
 
-        // уничтожаем предыдущий график в этом слоте, если есть
         this.charts.salesByObjectChart?.destroy();
 
         this.charts.salesByObjectChart = new Chart(ctx, {
@@ -587,13 +818,10 @@ const ChartModule = {
         }
         const ctx = canvas.getContext('2d');
 
-        // уничтожаем предыдущую инстанцию, если есть
         if (this.charts.salesByEventChart) {
-            try { this.charts.salesByEventChart.destroy(); } catch (e) { /* ignore */ }
-            this.charts.salesByEventChart = null;
+            try { this.charts.salesByEventChart.destroy(); } catch (e) { }
         }
 
-        // агрегируем по видам услуг
         const eventsObj = DataModule.aggregateByEvent(data || []);
         let labels = Object.keys(eventsObj || {});
         let values = labels.map(k => {
@@ -601,18 +829,14 @@ const ChartModule = {
             return isNaN(v) ? 0 : v;
         });
 
-        // общий суммарный показатель
         const totalSum = values.reduce((s, v) => s + v, 0);
 
-        // безопасный fallback — если нет данных или сумма = 0, показываем "Нет данных" с ненулевым значением
         if (labels.length === 0 || totalSum === 0) {
             labels = ['Нет данных'];
             values = [1];
             var bg = ['#cbd5e1'];
-            var border = '#fff';
         } else {
             var bg = '#6366f1';
-            var border = '#4f46e5';
         }
 
         this.charts.salesByEventChart = new Chart(ctx, {
@@ -623,7 +847,7 @@ const ChartModule = {
                     label: 'Сумма продаж (₸)',
                     data: values,
                     backgroundColor: Array.isArray(bg) ? bg : labels.map(() => bg),
-                    borderColor: Array.isArray(border) ? border : labels.map(() => border),
+                    borderColor: '#4f46e5',
                     borderWidth: 1
                 }]
             },
@@ -640,8 +864,6 @@ const ChartModule = {
             }
         });
     },
-
-    // Новый: обзор по билетам (pie) — с maintainAspectRatio=false и защита высоты контейнера
     createTicketsOverviewChart() {
         const canvas = document.getElementById('ticketsOverviewChart');
         if (!canvas) return;
@@ -650,8 +872,7 @@ const ChartModule = {
         const ctx = canvas.getContext('2d');
 
         if (this.charts.ticketsOverviewChart) {
-            try { this.charts.ticketsOverviewChart.destroy(); } catch (e) { /* ignore */ }
-            this.charts.ticketsOverviewChart = null;
+            try { this.charts.ticketsOverviewChart.destroy(); } catch (e) { }
         }
 
         const selectedObject = AppModule.currentObject;
@@ -682,8 +903,6 @@ const ChartModule = {
             }
         });
     },
-
-    // Новый: распределение по категориям (stacked bar) — защита высоты контейнера
     createTicketsByCategoryChart() {
         const canvas = document.getElementById('ticketsByCategoryChart');
         if (!canvas) return;
@@ -692,8 +911,7 @@ const ChartModule = {
         const ctx = canvas.getContext('2d');
 
         if (this.charts.ticketsByCategoryChart) {
-            try { this.charts.ticketsByCategoryChart.destroy(); } catch (e) { /* ignore */ }
-            this.charts.ticketsByCategoryChart = null;
+            try { this.charts.ticketsByCategoryChart.destroy(); } catch (e) { }
         }
 
         const { labels, activated, notActivated, unsold } = TicketModule.getCategoryArrays();
@@ -705,7 +923,6 @@ const ChartModule = {
                 datasets: [
                     { label: 'Активированные', data: activated, backgroundColor: '#6366f1' },
                     { label: 'Не активированные', data: notActivated, backgroundColor: '#f59e0b' },
-                    // { label: 'Не проданные', data: unsold, backgroundColor: '#ef4444' }
                 ]
             },
             options: {
@@ -733,13 +950,10 @@ const AppModule = {
         }
         this.isInitialized = true;
         console.log('Initializing sales report page');
-        // сначала загрузим данные
         await DataModule.fetchSalesData();
-        // убедимся, что фильтр по умолчанию применён ко всем данным
         DataModule.filterData({ dateFrom: '', dateTo: '' });
         this.bindEvents();
         this.setDefaultFilters();
-        // показать дашборд и таблицу уже с загруженными данными (все объекты по умолчанию)
         window.salesReportShowDashboard(null);
         this.updateTable();
     },
@@ -748,15 +962,12 @@ const AppModule = {
         document.getElementById('exportExcelBtn')?.addEventListener('click', this.handleExport);
         document.getElementById('showAllAnalyticsBtn')?.addEventListener('click', this.handleShowAllAnalytics);
         document.getElementById('objectSelect')?.addEventListener('change', () => this.handleObjectChange());
-        // слушатели для выбора периода в subtitle
         document.getElementById('dateFrom')?.addEventListener('change', () => this.handleFilter());
         document.getElementById('dateTo')?.addEventListener('change', () => this.handleFilter());
         document.getElementById('applyPeriodBtn')?.addEventListener('click', () => this.handleFilter());
         const pageSizeSelect = document.getElementById('pageSizeSelect');
         if (pageSizeSelect) {
             pageSizeSelect.addEventListener('change', () => this.handleRowsPerPage());
-        } else {
-            console.warn('pageSizeSelect not found, cannot bind event');
         }
     },
     handleObjectChange() {
@@ -764,8 +975,6 @@ const AppModule = {
         if (!sel) return;
         const val = sel.value === 'all' ? null : sel.value;
         this.currentObject = val;
-        console.log('Selected object:', val || 'all');
-        // show dashboard for selected object (overrides event filter)
         window.salesReportShowDashboard();
     },
     setDefaultFilters() {
@@ -784,7 +993,7 @@ const AppModule = {
     handleFilter() {
         const dateFrom = document.getElementById('dateFrom')?.value || '';
         const dateTo = document.getElementById('dateTo')?.value || '';
-        if (dateTo && dateFrom && dateTo < dateFrom) {
+        if (dateFrom && dateTo && dateTo < dateFrom) {
             alert('Дата "по" должна быть не раньше даты "с"');
             return;
         }
@@ -796,10 +1005,7 @@ const AppModule = {
         if (pageSizeSelect) {
             DataModule.rowsPerPage = parseInt(pageSizeSelect.value, 10);
             DataModule.currentPage = 1;
-            console.log('Rows per page changed to:', DataModule.rowsPerPage);
             this.updateTable();
-        } else {
-            console.error('pageSizeSelect element not found');
         }
     },
     handleExport() {
@@ -814,7 +1020,6 @@ const AppModule = {
         }
     },
     handleShowAllAnalytics() {
-        console.log('Handling show all analytics');
         const dateFromInput = document.getElementById('dateFrom');
         const dateToInput = document.getElementById('dateTo');
         let dateFrom = dateFromInput?.value || '';
@@ -826,7 +1031,6 @@ const AppModule = {
             if (dateFromInput && dateToInput) {
                 dateFromInput.value = dateFrom;
                 dateToInput.value = dateTo;
-                console.log('Set default date range:', dateFrom, 'to', dateTo);
                 DataModule.filterData({ dateFrom, dateTo });
             }
         }
@@ -842,10 +1046,9 @@ const AppModule = {
 // Глобальные функции
 window.salesReportShowDashboard = function (eventName, rowDate, analyticsDateTo) {
     const selectedObject = AppModule.currentObject;
-    console.log('Showing dashboard for:', { eventName: eventName || 'all events', selectedObject, rowDate, analyticsDateTo });
     AppModule.currentEvent = eventName;
     const isSingleEvent = !!eventName && !selectedObject;
-    // if object is selected, show data for that object, otherwise if eventName passed use event filter, else show all filtered data
+
     let data;
     if (selectedObject) {
         data = DataModule.filteredData.filter(s => s.object === selectedObject);
@@ -871,15 +1074,13 @@ window.salesReportShowDashboard = function (eventName, rowDate, analyticsDateTo)
             dateFrom = rowDate;
         } else if (data.length > 0) {
             const firstSale = data[0];
-            if (firstSale.date && !isNaN(new Date(firstSale.date).getTime())) {
+            if (firstSale.date) {
                 dateFrom = firstSale.date.split('T')[0];
             }
         }
-        console.log('Event date:', { eventName, dateFrom, dataLength: data.length });
     } else {
         dateFrom = document.getElementById('dateFrom')?.value || '2025-10-01';
         dateTo = analyticsDateTo || document.getElementById('dateTo')?.value || '2025-10-31';
-        console.log('Dashboard dates:', { dateFrom, dateTo });
     }
 
     RenderModule.updateDashboardSubtitle(eventName, selectedObject, dateFrom, dateTo);
@@ -892,195 +1093,18 @@ window.salesReportShowDashboard = function (eventName, rowDate, analyticsDateTo)
     ChartModule.createSalesByHourChart(data);
     RenderModule.renderTopDays(data);
 
-    // показываем разбивку возвратов для выбранного объекта или для одиночного события
     if (selectedObject || isSingleEvent) {
         ChartModule.createReturnsByChannelChart(data);
-        // также отображаем "Продажи по видам услуг" внутри выбранного объекта (если есть несколько событий)
         ChartModule.createSalesByEventChart(data);
     } else {
-        // если показаны все объекты — отображаем сводную диаграмму по видам услуг
         ChartModule.createSalesByEventChart(data);
     }
 
-    // Новые чарты по билетам
     ChartModule.createTicketsOverviewChart();
     ChartModule.createTicketsByCategoryChart();
 };
 
-// === TicketModule с УЛУЧШЕННОЙ логикой активации (по объектам + разброс по категориям) ===
-const TicketModule = (function () {
-    const DAYS = 31;
-    const objects = {
-        'Мавзолей Ходжи Ахмеда Ясави': { dailyTickets: 2000 },
-        'Мавзолей Арыстан Баб': { dailyTickets: 1500 },
-        'Музей-заповедник Отырар': { dailyTickets: 1500 },
-        'Мавзолей Айша-Биби': { dailyTickets: 1000 },
-        'Мавзолей Карахан': { dailyTickets: 1000 }
-    };
-
-    const categoryDefs = {
-        'Абонемент (Комиссия)': { price: 0, perDayAll: 10 },
-        'Абонемент (Акимат)': { price: 0, perDayAll: 10 },
-        'Пенсионеры': { priceByObject: { 'Мавзолей Ходжи Ахмеда Ясави': 500, 'Музей-заповедник Отырар': 300, 'Мавзолей Арыстан Баб': 300, 'Мавзолей Карахан': 200, 'Мавзолей Айша-Биби': 200 }, perDayEach: 50 },
-        'Дети дошкольного возраста': { priceByObject: { 'Мавзолей Ходжи Ахмеда Ясави': 300, 'Мавзолей Айша-Биби': 100, 'Мавзолей Карахан': 100, 'Мавзолей Арыстан Баб': 100, 'Музей-заповедник Отырар': 100 }, perDayEach: 50 },
-        'Экскурсия на казахском и русском языке': { priceByObject: { 'Мавзолей Айша-Биби': 2000, 'Мавзолей Карахан': 2000, 'Мавзолей Арыстан Баб': 3000, 'Музей-заповедник Отырар': 3000, 'Мавзолей Ходжи Ахмеда Ясави': 3000 }, perDayEach: 100 },
-        'Студент': { priceByObject: { 'Мавзолей Ходжи Ахмеда Ясави': 500, 'Музей-заповедник Отырар': 300, 'Мавзолей Арыстан Баб': 300, 'Мавзолей Карахан': 200, 'Мавзолей Айша-Биби': 200 }, perDayEach: 100 },
-        'Иностранным гражданам иных государств': { price: 2000, perDayListed: 100 },
-        'Экскурсия для детей': { price: 1000, perDayListed: 50 },
-        'Иностранным гражданам стран СНГ': { price: 1500, perDayListed: 100 },
-        'Экскурсия на английском языке': { price: 5000, perDayListed: 20 },
-        'Сервис аудиогида': { priceByObject: { 'Мавзолей Ходжи Ахмеда Ясави': 1500 }, perDayObj: { 'Мавзолей Ходжи Ахмеда Ясави': 10 } }
-    };
-
-    const ADULT_PRICE = 1000;
-    const ADULT_CAT = 'Взрослый билет (Гражданин РК)';
-    const listedObjects = ['Мавзолей Карахан', 'Мавзолей Айша-Биби', 'Мавзолей Арыстан Баб', 'Музей-заповедник Отырар', 'Мавзолей Ходжи Ахмеда Ясави'];
-
-    // === Хранилище по категориям (глобально) ===
-    const categories = {}; // catName -> { total, activated, notActivated, revenue }
-
-    // === Хранилище по объектам (с activated) ===
-    const objectsMonthly = {}; // objName -> { monthlyTickets, monthlyRevenue, monthlyActivated, activationRate }
-
-    let grandRevenue = 0;
-    let grandActivated = 0;
-    let grandTotalTickets = 0;
-
-    Object.keys(objects).forEach(obj => {
-        // === КЛЮЧЕВОЕ: свой % активации для каждого объекта (85-95%) ===
-        const baseActivationRate = 0.85 + Math.random() * 0.10; // например, Ясави — 92.3%, Айша-Биби — 87.1% и т.д.
-        let dailyAssigned = 0;
-        let dailyRev = 0;
-        let dailyActivated = 0;
-
-        // Инициализация объекта
-        objectsMonthly[obj] = {
-            monthlyTickets: objects[obj].dailyTickets * DAYS,
-            monthlyRevenue: 0,
-            monthlyActivated: 0,
-            activationRate: baseActivationRate
-        };
-
-        Object.entries(categoryDefs).forEach(([cat, def]) => {
-            let cnt = 0, price = 0;
-            if (def.perDayAll) { cnt = def.perDayAll; price = def.price || 0; }
-            else if (def.perDayEach && def.priceByObject?.[obj]) { cnt = def.perDayEach; price = def.priceByObject[obj]; }
-            else if (def.perDayListed && listedObjects.includes(obj)) { cnt = def.perDayListed; price = def.price; }
-            else if (def.perDayObj?.[obj]) { cnt = def.perDayObj[obj]; price = def.priceByObject[obj] || 0; }
-
-            if (cnt > 0) {
-                const monthCnt = cnt * DAYS;
-                const monthRev = monthCnt * price;
-
-                // === Небольшой разброс по категории (±3%) ===
-                const categoryVariation = -0.03 + Math.random() * 0.06;
-                const finalRate = Math.max(0.80, Math.min(0.98, baseActivationRate + categoryVariation));
-                const monthActivated = Math.round(monthCnt * finalRate);
-
-                if (!categories[cat]) {
-                    categories[cat] = { total: 0, activated: 0, notActivated: 0, unsold: 0, revenue: 0 };
-                }
-                categories[cat].total += monthCnt;
-                categories[cat].activated += monthActivated;
-                categories[cat].notActivated += (monthCnt - monthActivated);
-                categories[cat].revenue += monthRev;
-
-                dailyAssigned += cnt;
-                dailyRev += cnt * price;
-                dailyActivated += Math.round(cnt * finalRate);
-            }
-        });
-
-        // === Взрослые (остаток) ===
-        const dailyAdult = Math.max(0, objects[obj].dailyTickets - dailyAssigned);
-        const monthAdult = dailyAdult * DAYS;
-        const adultRate = Math.max(0.80, Math.min(0.98, baseActivationRate + (-0.02 + Math.random() * 0.04)));
-        const monthAdultActivated = Math.round(monthAdult * adultRate);
-
-        if (!categories[ADULT_CAT]) {
-            categories[ADULT_CAT] = { total: 0, activated: 0, notActivated: 0, unsold: 0, revenue: 0 };
-        }
-        categories[ADULT_CAT].total += monthAdult;
-        categories[ADULT_CAT].activated += monthAdultActivated;
-        categories[ADULT_CAT].notActivated += (monthAdult - monthAdultActivated);
-        categories[ADULT_CAT].revenue += monthAdult * ADULT_PRICE;
-
-        dailyRev += dailyAdult * ADULT_PRICE;
-        dailyActivated += Math.round(dailyAdult * adultRate);
-
-        // Финальные итоги по объекту
-        objectsMonthly[obj].monthlyRevenue = dailyRev * DAYS;
-        objectsMonthly[obj].monthlyActivated = dailyActivated * DAYS;
-
-        // Глобальные накопители
-        grandRevenue += dailyRev * DAYS;
-        grandActivated += dailyActivated * DAYS;
-        grandTotalTickets += objects[obj].dailyTickets * DAYS;
-    });
-
-    const grandTotals = {
-        totalTickets: grandTotalTickets,
-        activated: grandActivated,
-        notActivated: grandTotalTickets - grandActivated,
-        revenue: grandRevenue
-    };
-
-    return {
-        categories,
-        objectsMonthly,
-        grandTotals,
-
-        getTotals() {
-            // Глобальные
-            return {
-                activated: grandTotals.activated,
-                notActivated: grandTotals.notActivated,
-                unsold: 0,
-                total: grandTotals.totalTickets
-            };
-        },
-
-        // По текущему выбранному объекту (если есть)
-        getTotalsForObject(objectName) {
-            if (!objectName || !objectsMonthly[objectName]) return this.getTotals();
-            const o = objectsMonthly[objectName];
-            return {
-                activated: o.monthlyActivated,
-                notActivated: o.monthlyTickets - o.monthlyActivated,
-                unsold: 0,
-                total: o.monthlyTickets
-            };
-        },
-
-        getCategoryArrays() {
-            const labels = Object.keys(categories);
-            return {
-                labels,
-                activated: labels.map(k => categories[k].activated || 0),
-                notActivated: labels.map(k => categories[k].notActivated || 0),
-                unsold: labels.map(() => 0)
-            };
-        },
-
-        debug() {
-            console.log('=== TicketModule: Октябрь 2025 | Активация по объектам 85-95% ===');
-            console.table(objectsMonthly);
-            console.log('По объектам:');
-            Object.keys(objectsMonthly).forEach(obj => {
-                const o = objectsMonthly[obj];
-                const perc = (o.monthlyActivated / o.monthlyTickets * 100).toFixed(1);
-                console.log(`${obj}: ${perc}% активировано (${o.monthlyActivated.toLocaleString()} из ${o.monthlyTickets.toLocaleString()})`);
-            });
-            console.table(categories);
-            console.log('Глобально:', grandTotals);
-            console.log('Общий % активации:', (grandTotals.activated / grandTotals.totalTickets * 100).toFixed(1) + '%');
-            console.log('Выручка:', RenderModule.formatAmount(grandTotals.revenue));
-        }
-    };
-})();
-
 window.salesReportBackToMain = function () {
-    console.log('Returning to main page');
     AppModule.currentEvent = null;
     AppModule.currentObject = null;
     const mainPage = document.getElementById('mainPage');
@@ -1099,6 +1123,6 @@ window.salesReportBackToMain = function () {
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
-    TicketModule.debug(); // увидишь ~89.3% активации, разные по категориям
+    TicketModule.debug();
     AppModule.initialize();
 });
